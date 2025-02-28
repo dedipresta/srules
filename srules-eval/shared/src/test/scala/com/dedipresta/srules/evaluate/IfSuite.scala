@@ -7,22 +7,8 @@ import munit.*
 
 final class IfSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val and  = And[Ctx]()
-    Map(
-      "if"  -> If[Ctx](),
-      "and" -> and,
-      "&&"  -> and,
-      "+"   -> Add[Ctx](),
-      ">"   -> Gt(),
-      "<"   -> Lt(),
-      "/"   -> Divide[Ctx](),
-      "=="  -> Equal(),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate if-else expression with 3 arguments (true)") {
     assertEquals(
@@ -66,10 +52,10 @@ final class IfSuite extends FunSuite {
     )
   }
 
-  test("parse and evaluate if-else expression but does not evaluate the value") {
+  test("parse and evaluate if-else expression and evaluate the value") {
     assertEquals(
       Parser.parser.parseAll("if(true, 1/0, 0)").flatMap(evaluator.evaluate(_, Map.empty)),
-      Right(Expr.RFunction("/", List(Expr.RInt(1), Expr.RInt(0)))),
+      Left(EvaluationError.DivisionByZero("/", List(Expr.RInt(1), Expr.RInt(0)))),
     )
   }
 

@@ -7,17 +7,8 @@ import munit.*
 
 final class GteSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val gte   = Gte[Ctx]()
-    Map(
-      "+"   -> Add(),
-      ">="  -> gte,
-      "gte" -> gte, // alias
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate gte function (ints true)") {
     assertEquals(

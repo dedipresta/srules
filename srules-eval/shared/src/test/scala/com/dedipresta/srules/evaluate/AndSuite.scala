@@ -7,16 +7,8 @@ import munit.*
 
 final class AndSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val and = And[Ctx]()
-    Map(
-      "and" -> and,
-      "&&"  -> and,
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate and expression") {
     assertEquals(
@@ -24,7 +16,6 @@ final class AndSuite extends FunSuite {
       Right(Expr.RBoolean(false)),
     )
   }
-
 
   test("and has a short circuit that does not evaluate the second argument") {
     assertEquals(

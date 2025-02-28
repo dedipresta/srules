@@ -363,4 +363,33 @@ final class ParserSuite extends FunSuite {
     )
   }
 
+  test("parse an expression with nested functions") {
+    assertEquals(
+      Parser.parser.parseAll("""named("i", $var1, if(isNull(named("i")), -1, named("i")+1))"""),
+      Right(
+        RFunction(
+          "named",
+          RString("i"),
+          RFunction(
+            "var",
+            RString("var1"),
+          ),
+          RFunction(
+            "if",
+            RFunction(
+              "isNull",
+              RFunction("named", RString("i")),
+            ),
+            RInt(-1),
+            RFunction(
+              "+",
+              RFunction("named", RString("i")),
+              RInt(1),
+            ),
+          ),
+        ),
+      ),
+    )
+  }
+
 }

@@ -2,20 +2,13 @@ package com.dedipresta.srules.evaluate
 
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.operators.*
+
 import munit.*
 
 final class FloorSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val floor = Floor[Ctx]()
-    Map(
-      "floor" -> floor,
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
-
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate floor function (int)") {
     assertEquals(
@@ -31,9 +24,23 @@ final class FloorSuite extends FunSuite {
     )
   }
 
+  test("parse and evaluate floor function (double)") {
+    assertEquals(
+      Parser.parser.parseAll("floor(42.4)").flatMap(evaluator.evaluate(_, Map.empty)),
+      Right(Expr.RDouble(42.0)),
+    )
+  }
+
   test("parse and evaluate floor function (float)") {
     assertEquals(
       Parser.parser.parseAll("floor(42.0f)").flatMap(evaluator.evaluate(_, Map.empty)),
+      Right(Expr.RFloat(42.0f)),
+    )
+  }
+
+  test("parse and evaluate floor function (float)") {
+    assertEquals(
+      Parser.parser.parseAll("floor(42.4f)").flatMap(evaluator.evaluate(_, Map.empty)),
       Right(Expr.RFloat(42.0f)),
     )
   }
@@ -48,16 +55,8 @@ final class FloorSuite extends FunSuite {
   test("parse and evaluate floor function (boolean)") {
     assertEquals(
       Parser.parser.parseAll("floor(true)").flatMap(evaluator.evaluate(_, Map.empty)),
-      Left(EvaluationError.InvalidArgumentType("floor", List(Expr.RBoolean(true)))),
+      Left(EvaluationError.OperationFailure("floor", List(Expr.RBoolean(true)), FailureReason.InvalidArgumentType("Numeric", Expr.RBoolean(true)))),
     )
   }
-
-  test("parse and evaluate floor function (boolean false)") {
-    assertEquals(
-      Parser.parser.parseAll("floor(false)").flatMap(evaluator.evaluate(_, Map.empty)),
-      Left(EvaluationError.InvalidArgumentType("floor", List(Expr.RBoolean(false)))),
-    )
-  }
-
 
 }

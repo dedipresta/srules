@@ -2,20 +2,13 @@ package com.dedipresta.srules.evaluate
 
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.operators.*
+
 import munit.*
 
 final class MaxSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val max = Max[Ctx]()
-    Map(
-      "max" -> max,
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
-
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate max function (ints)") {
     assertEquals(
@@ -51,6 +44,5 @@ final class MaxSuite extends FunSuite {
       Right(Expr.RString("d")),
     )
   }
-
 
 }

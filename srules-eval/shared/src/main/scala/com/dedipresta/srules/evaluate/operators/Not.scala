@@ -7,6 +7,7 @@ import com.dedipresta.srules.evaluate.syntax.*
 import cats.syntax.all.*
 
 object Not:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -18,4 +19,4 @@ object Not:
         args
           .traverse(evaluator.evaluate(_, ctx))
           .flatMap(_.withExactly1(op))
-          .flatMap(_.mapBoolean(op, !_).map(Expr.RBoolean.apply))
+          .flatMap(_.mapBoolean(!_).bimap(EvaluationError.OperationFailure(op, args, _), _.toExpr))

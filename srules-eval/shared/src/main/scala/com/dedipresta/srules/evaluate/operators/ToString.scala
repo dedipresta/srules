@@ -1,15 +1,14 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
-
 import com.dedipresta.srules.*
-import com.dedipresta.srules.given
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
+import com.dedipresta.srules.given
 
 import cats.syntax.all.*
 
 object ToString:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -23,5 +22,3 @@ object ToString:
           .flatMap(_.withExactly1(op))
           .map(_.show)
           .map(_.toExpr)
-
-

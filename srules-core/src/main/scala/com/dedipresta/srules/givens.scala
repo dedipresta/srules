@@ -22,7 +22,7 @@ private val infixOperators =
 
 given Show[Expr] = new Show[Expr] {
 
-  private def renderFloat(f: Float): String =
+  private def renderFloat(f: Float): String   =
     val s = f.toString
     if s.contains('.') then s"${s}f"
     else s"$s.0f"
@@ -46,6 +46,5 @@ given Show[Expr] = new Show[Expr] {
           s"(${show(a.head)}$n${show(a(1))})" // infix operator with no known precedence
         else
           s"$n(${a.map(e => show(e)).mkString(",")})"
-
 
 }

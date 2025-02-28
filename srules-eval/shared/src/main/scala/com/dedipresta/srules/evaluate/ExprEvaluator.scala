@@ -7,7 +7,7 @@ trait ExprEvaluator[Ctx, E]:
   // when evaluating an expression, it will extract the operator name retrieve the operator from the map
   // then call operator.evaluate(this, op, args, ctx)
   final def evaluate(expr: Expr, ctx: Ctx): Either[E, Expr] =
-    evaluate(expr, RuleCtx.SimpleContext(ctx))
+    evaluate(expr, RuleCtx.DefaultContext(ctx, Map.empty))
 
   def evaluate(expr: Expr, ctx: RuleCtx[Ctx]): Either[E, Expr]
 

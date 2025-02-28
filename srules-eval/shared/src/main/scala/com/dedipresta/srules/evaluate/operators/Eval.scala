@@ -7,6 +7,7 @@ import com.dedipresta.srules.evaluate.syntax.*
 import cats.syntax.all.*
 
 object Eval:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(

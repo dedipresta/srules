@@ -9,6 +9,7 @@ import cats.syntax.all.*
 import scala.math.Ordering.Implicits.*
 
 object Gt:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
 
@@ -25,10 +26,10 @@ object Gt:
           case None                => Right(Expr.RBoolean(true)) // true by vacuous truth
           case Some(evaluatedHead) =>
             evaluatedHead match {
-              case Expr.RInt(i)    => args.tail.foldEvaluateExtractWhile(evaluator, ctx)(op, i)(f).map(r => Expr.RBoolean(r._2))
-              case Expr.RLong(i)   => args.tail.foldEvaluateExtractWhile(evaluator, ctx)(op, i)(f).map(r => Expr.RBoolean(r._2))
-              case Expr.RFloat(i)  => args.tail.foldEvaluateExtractWhile(evaluator, ctx)(op, i)(f).map(r => Expr.RBoolean(r._2))
-              case Expr.RDouble(i) => args.tail.foldEvaluateExtractWhile(evaluator, ctx)(op, i)(f).map(r => Expr.RBoolean(r._2))
-              case _               => Left(EvaluationError.InvalidArgumentType(op, args))
+              case Expr.RInt(i)    => args.tail.foldEvaluateExtractWhile(evaluator, op, ctx)(i)(f).map(_._2.toExpr)
+              case Expr.RLong(i)   => args.tail.foldEvaluateExtractWhile(evaluator, op, ctx)(i)(f).map(_._2.toExpr)
+              case Expr.RFloat(i)  => args.tail.foldEvaluateExtractWhile(evaluator, op, ctx)(i)(f).map(_._2.toExpr)
+              case Expr.RDouble(i) => args.tail.foldEvaluateExtractWhile(evaluator, op, ctx)(i)(f).map(_._2.toExpr)
+              case other           => Left(FailureReason.InvalidArgumentType("Numeric", other)).opError(op, args)
             }
         }

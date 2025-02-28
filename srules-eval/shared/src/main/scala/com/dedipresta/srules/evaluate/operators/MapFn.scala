@@ -7,6 +7,7 @@ import com.dedipresta.srules.evaluate.syntax.*
 import cats.syntax.all.*
 
 object MapFn:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(evaluator: ExprEvaluator[Ctx, EvaluationError], op: String, args: List[Expr], ctx: RuleCtx[Ctx]): Either[EvaluationError, Expr] =
@@ -18,9 +19,16 @@ object MapFn:
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
-                ls   <- evaluator.evaluate(expr, ctx).flatMap(_.mapList[List[Expr]](op, identity))
-                data <- ls.traverse(evaluator.evaluate(_, ctx)) // evaluate inner list elements
-                res  <- data.zipWithIndex.traverse((el, i) => evaluator.evaluate(fn, ctx.withIndexedValue(i, el))).map(_.toExpr)
-              } yield res
-            case _                          => Left(EvaluationError.InvalidArgumentType(op, args))
+                data <- evaluator.evaluate(expr, ctx).flatMap(_.withList.leftMap(EvaluationError.OperationFailure(op, args, _)))
+                res  <- data.zipWithIndex
+                          .foldLeft[Either[EvaluationError, Vector[Expr]]](Vector.empty.asRight) { case (acc, (expr, index)) =>
+                            acc.flatMap { (accValue: Vector[Expr]) =>
+                              for {
+                                evaluated <- evaluator.evaluate(expr, ctx)
+                                expr      <- evaluator.evaluate(fn, ctx.withIndexedValue(index, evaluated))
+                              } yield accValue.appended(expr)
+                            }
+                          }
+              } yield res.toList.toExpr
+            case (_, other)                 => Left(FailureReason.InvalidArgumentType("Function", other)).opError(op, args)
           }

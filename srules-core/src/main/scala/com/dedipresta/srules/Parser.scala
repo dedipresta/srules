@@ -1,7 +1,7 @@
 package com.dedipresta.srules
 
-import cats.parse.Parser.*
 import cats.parse.{Parser => CatsParser, *}
+import cats.parse.Parser.*
 import cats.parse.Rfc5234.alpha
 import cats.parse.Rfc5234.digit
 import cats.parse.Rfc5234.dquote
@@ -11,8 +11,8 @@ object Parser {
   import Expr.*
 
   // whitespaces
-  val ws: CatsParser[Unit]   = charIn(" \t\n\r").void
-  val ws0: Parser0[Unit] = ws.rep0.void
+  val ws: CatsParser[Unit] = charIn(" \t\n\r").void
+  val ws0: Parser0[Unit]   = ws.rep0.void
 
   val parseNull: CatsParser[Unit]             = string("null").void
   val parseBoolean: CatsParser[Boolean]       = string("true").as(true) | string("false").as(false)
@@ -20,8 +20,9 @@ object Parser {
   val parseSignedDigits: CatsParser[String]   = (charIn("+-").?.string.with1 ~ parseUnsignedDigits).map(_ + _)
   val parseInteger: CatsParser[Int]           = parseSignedDigits.map(_.toInt)
   val parseLong: CatsParser[Long]             = (parseSignedDigits ~ charIn("lL")).map(_._1.toLong)
-  val parseDouble: CatsParser[Double]         = (parseSignedDigits ~ char('.') ~ parseUnsignedDigits).map { case ((a, _), b) => s"$a.$b".toDouble } // TODO support appended dD
-  val parseFloat: CatsParser[Float]           = (parseSignedDigits ~ char('.') ~ parseUnsignedDigits <* charIn("fF")).map { case ((a, _), b) => s"$a.$b".toFloat }
+  val parseFloatingPoint: CatsParser[String]  = (parseSignedDigits ~ char('.') ~ parseUnsignedDigits).map { case ((a, _), b) => s"$a.$b" }
+  val parseDouble: CatsParser[Double]         = (parseFloatingPoint <* charIn("dD").?).map(_.toDouble)
+  val parseFloat: CatsParser[Float]           = (parseFloatingPoint <* charIn("fF")).map(_.toFloat)
   val stringChar: CatsParser[Char]            = CatsParser.oneOf(List((char('\\') ~ char('"')).as('"'), charWhere(_ != '"')))
   val innerQuotes: Parser0[String]            = stringChar.rep0.string
   val parseQuotedString: CatsParser[String]   = dquote *> innerQuotes <* dquote
@@ -45,9 +46,9 @@ object Parser {
 
   // arithmetic operators and expressions
   // ORDER IS VERY IMPORTANT TO ENSURE BACKTRACKING WORKS
-  val lowerPrecedence: List[String]       = List("+", "-", "||", "<", "<=", ">", ">=", "==", "!=").sortBy(_.length).reverse
+  val lowerPrecedence: List[String]           = List("+", "-", "||", "<", "<=", ">", ">=", "==", "!=").sortBy(_.length).reverse
   val lowerPrecedenceOps: CatsParser[String]  = oneOf(lowerPrecedence.map(op => string(op).as(op)))
-  val higherPrecedence: List[String]      = List("*", "/", "%", "&&").sortBy(_.length).reverse
+  val higherPrecedence: List[String]          = List("*", "/", "%", "&&").sortBy(_.length).reverse
   val higherPrecedenceOps: CatsParser[String] = oneOf(higherPrecedence.map(op => string(op).as(op))).string
 
   val numericValue: CatsParser[Expr] = longValue.backtrack | floatValue.backtrack | doubleValue.backtrack | integerValue

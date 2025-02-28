@@ -7,19 +7,8 @@ import munit.*
 
 final class EvalSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val and   = And[Ctx]()
-    Map(
-      "if"   -> If[Ctx](),
-      "+"    -> Add[Ctx](),
-      "and"  -> and,
-      "&&"   -> and,
-      "eval" -> Eval[Ctx](),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate eval expression") {
     assertEquals(
@@ -28,7 +17,7 @@ final class EvalSuite extends FunSuite {
     )
   }
 
-  test("eval allows to force evaluationof returned value from a if-else expression") {
+  test("eval allows to force evaluation of returned value from a if-else expression") {
     assertEquals(
       Parser.parser.parseAll("eval(if(true, 1 + 1, 5))").flatMap(evaluator.evaluate(_, Map.empty)),
       Right(Expr.RInt(2)),

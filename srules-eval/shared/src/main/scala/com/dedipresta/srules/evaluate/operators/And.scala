@@ -4,7 +4,10 @@ import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.syntax.all.*
+
 object And:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] = new Operator[Ctx, EvaluationError]:
     def evaluate(
         evaluator: ExprEvaluator[Ctx, EvaluationError],
@@ -14,10 +17,8 @@ object And:
     ): Either[EvaluationError, Expr] =
       // no traverse since we do not want to evaluate all arguments since we want to short-circuit evaluation
       args
-        .foldEvaluateExtractWhile(evaluator, ctx)(op, true) { (acc, current) =>
+        .foldEvaluateExtractWhile(evaluator, op, ctx)(true) { (acc, current) =>
           val and = acc && current
           (and, and)
         }
-        .map(_._2)
-        .map(Expr.RBoolean.apply)
-
+        .map(_._2.toExpr)

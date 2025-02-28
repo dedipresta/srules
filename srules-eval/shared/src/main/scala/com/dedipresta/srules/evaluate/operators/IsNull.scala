@@ -1,12 +1,13 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
-// check if all elements are distinct
-object NotEqual:
+import cats.syntax.all.*
+
+object IsNull:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -17,9 +18,8 @@ object NotEqual:
       ): Either[EvaluationError, Expr] =
         args
           .traverse(evaluator.evaluate(_, ctx))
+          .flatMap(_.withExactly1(op))
           .flatMap {
-            case e1 :: e2 :: Nil => Right(Expr.RBoolean(e1 != e2)) // most common case
-            case Nil             => Right(Expr.RBoolean(true))     // true by vacuous truth
-            case head :: Nil     => Right(Expr.RBoolean(true))     // true by vacuous truth
-            case other           => Right(Expr.RBoolean(other.distinct.length == other.length))
+            case Expr.RNull => Right(true.toExpr)
+            case other      => Right(false.toExpr)
           }

@@ -1,12 +1,14 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.syntax.all.*
+
 // convert an expression to a float value
 object ToFloat:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -18,15 +20,15 @@ object ToFloat:
         args
           .traverse(evaluator.evaluate(_, ctx))
           .flatMap(_.withExactly1(op))
-          .flatMap(v => toFloat(op, v).map(_.toExpr))
+          .flatMap(v => toFloat(op, v).bimap(_.opError(op, args), _.toExpr))
 
-      private def toFloat(op: String, expr: Expr): Either[EvaluationError, Float] =
+      private def toFloat(op: String, expr: Expr): Either[FailureReason, Float] =
         expr match {
-          case Expr.RString(s)  => s.toFloatOption.toRight(EvaluationError.InvalidArgument(op, List(expr)))
+          case Expr.RString(s)  => s.toFloatOption.toRight(FailureReason.InvalidArgumentValue(expr))
           case Expr.RInt(i)     => Right(i.toFloat)
           case Expr.RBoolean(b) => Right(if (b) 1f else 0f)
           case Expr.RLong(l)    => Right(l.toFloat)
           case Expr.RDouble(d)  => Right(d.toFloat)
           case Expr.RFloat(f)   => Right(f)
-          case _                => Left(EvaluationError.InvalidArgumentType(op, List(expr)))
+          case _                => Left(FailureReason.InvalidArgumentType("Convertible to Float", expr))
         }

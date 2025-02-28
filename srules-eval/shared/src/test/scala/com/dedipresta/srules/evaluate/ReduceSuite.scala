@@ -5,24 +5,10 @@ import com.dedipresta.srules.evaluate.operators.*
 
 import munit.*
 
-final class ReduceFnSuite extends FunSuite {
+final class ReduceSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val reduceFn        = ReduceFn[Ctx]()
-    Map(
-      "+"        -> Add(),
-      "-"        -> Subtract(),
-      "*"        -> Multiply(),
-      "=="       -> Equal(),
-      "%"        -> Mod(),
-      "reduce"   -> reduceFn,
-      "var"      -> VarFromMapAny(),
-      "toDouble" -> ToDouble(),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate a reduce expression on an array of ints") {
     assertEquals(

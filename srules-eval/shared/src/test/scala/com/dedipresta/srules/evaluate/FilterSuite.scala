@@ -5,24 +5,10 @@ import com.dedipresta.srules.evaluate.operators.*
 
 import munit.*
 
-final class FilterFnSuite extends FunSuite {
+final class FilterSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val filterFn        = FilterFn[Ctx]()
-    Map(
-      "+"        -> Add(),
-      "-"        -> Subtract(),
-      "*"        -> Multiply(),
-      "=="       -> Equal(),
-      "%"        -> Mod(),
-      "filter"   -> filterFn,
-      "var"      -> VarFromMapAny(),
-      "toDouble" -> ToDouble(),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate a filter expression on a list of ints") {
     assertEquals(

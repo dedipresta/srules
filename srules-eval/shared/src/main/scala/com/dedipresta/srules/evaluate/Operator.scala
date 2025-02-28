@@ -1,8 +1,8 @@
 package com.dedipresta.srules.evaluate
 
-import cats.syntax.all.*
-
 import com.dedipresta.srules.Expr
+
+import cats.syntax.all.*
 
 // TODO evaluated/ lazy
 // Effect
@@ -13,33 +13,8 @@ type EvaluateFn[Ctx, E] = (ExprEvaluator[Ctx, E], String, List[Expr], RuleCtx[Ct
 
 trait Operator[Ctx, E]:
   def evaluate(
-      evaluator: ExprEvaluator[Ctx, E],
-      op: String,
-      args: List[Expr],
-      ctx: RuleCtx[Ctx],
+      evaluator: ExprEvaluator[Ctx, E], // reference to the evaluator so that we can evaluate sub-expressions
+      op: String,                       // current operator name mostly provided for error messages
+      args: List[Expr],                 // arguments of the operator
+      ctx: RuleCtx[Ctx],                // context of the evaluation (user context, named variables, current index or value)
   ): Either[E, Expr]
-
-object Operator:
-
-    def evaluated[Ctx, E](f: EvaluateFn[Ctx, E]): Operator[Ctx, E] =
-      new Operator[Ctx, E]:
-        def evaluate(
-                      evaluator: ExprEvaluator[Ctx, E],
-                      op: String,
-                      args: List[Expr],
-                      ctx: RuleCtx[Ctx],
-                    ): Either[E, Expr] =
-          args
-            .traverse(evaluator.evaluate(_, ctx))
-            .flatMap(f(evaluator, op, _, ctx))
-
-final case class NamedOperator[Ctx, E](
-    name: String,
-    operator: Operator[Ctx, E],
-    aliases: Set[String]
-)
-object NamedOperator:
-  extension [Ctx,E](no: NamedOperator[Ctx, E]) {
-    def addAlias(s: String): NamedOperator[Ctx, E] = no.copy(aliases = no.aliases + s)
-    def addAliases(s: String*): NamedOperator[Ctx,E] = no.copy(aliases = no.aliases ++ s.toSet)
-  }

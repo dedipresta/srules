@@ -5,21 +5,10 @@ import com.dedipresta.srules.evaluate.operators.*
 
 import munit.*
 
-final class NotEqualSuite extends FunSuite {
+final class NotEqualsSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val not   = Not[Ctx]()
-    Map(
-      "!"   -> not,
-      "not" -> not, // alias
-      "+"   -> Add(),
-      "var" -> VarFromMapAny(),
-      "!="  -> NotEqual(),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate not equal expression (int)") {
     assertEquals(

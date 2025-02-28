@@ -7,6 +7,7 @@ import com.dedipresta.srules.evaluate.syntax.*
 import cats.syntax.all.*
 
 object If:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -31,9 +32,10 @@ object If:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         for {
-          condValue <- evaluator.evaluate(cond, ctx).flatMap(_.mapBoolean(op, identity))
+          condValue <- evaluator.evaluate(cond, ctx).flatMap(_.withBoolean.leftMap(EvaluationError.OperationFailure(op, List(value), _)))
           result    <- if (condValue) value.asRight else ifElse(evaluator, op, tail, ctx)
-        } yield result
+          evaluated <- evaluator.evaluate(result, ctx)
+        } yield evaluated
 
       private def ifElse(
           evaluator: ExprEvaluator[Ctx, EvaluationError],

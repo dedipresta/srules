@@ -7,6 +7,7 @@ import com.dedipresta.srules.evaluate.syntax.*
 import cats.syntax.all.*
 
 object Divide:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -24,7 +25,7 @@ object Divide:
             case (Expr.RLong(a), Expr.RLong(b))     => Either.catchNonFatal(Expr.RLong(a / b))
             case (Expr.RFloat(a), Expr.RFloat(b))   => Either.catchNonFatal(Expr.RFloat(a / b))
             case (Expr.RDouble(a), Expr.RDouble(b)) => Either.catchNonFatal(Expr.RDouble(a / b))
-            case _                                  => Left(EvaluationError.InvalidArgumentType(op, args))
+            case (l, r)                             => Left(FailureReason.InvalidArgumentTypes("Numeric", List(l, r))).opError(op, args)
           }
           .leftMap {
             case e: EvaluationError => e

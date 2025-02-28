@@ -7,17 +7,8 @@ import munit.*
 
 final class LteSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val lte   = Lte[Ctx]()
-    Map(
-      "+"   -> Add(),
-      "<="  -> lte,
-      "lte" -> lte, // alias
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate lte function (ints true)") {
     assertEquals(

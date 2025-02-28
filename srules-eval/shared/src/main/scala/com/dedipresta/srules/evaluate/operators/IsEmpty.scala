@@ -1,12 +1,13 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
-// equal 2 by 2 so true for empty list, single element list, and list with all elements equal
-object Equal:
+import cats.syntax.all.*
+
+object IsEmpty:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -17,9 +18,9 @@ object Equal:
       ): Either[EvaluationError, Expr] =
         args
           .traverse(evaluator.evaluate(_, ctx))
-          .flatMap { evaluated =>
-            evaluated.headOption match {
-              case Some(head) => Right(Expr.RBoolean(evaluated.forall(_ == head)))
-              case None       => Right(Expr.RBoolean(true)) // true by vacuous truth
-            }
+          .flatMap(_.withExactly1(op))
+          .flatMap {
+            case Expr.RString(s) => Right(s.isEmpty.toExpr)
+            case Expr.RList(l)   => Right(l.isEmpty.toExpr)
+            case other           => EvaluationError.OperationFailure(op, args, FailureReason.InvalidArgumentType("String or List", other)).asLeft
           }

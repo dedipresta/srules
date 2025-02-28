@@ -1,7 +1,9 @@
 package com.dedipresta.srules
 
-import cats.syntax.all.*
 import com.dedipresta.srules.given
+
+import cats.syntax.all.*
+
 import munit.*
 
 class ExprShowSuite extends FunSuite {

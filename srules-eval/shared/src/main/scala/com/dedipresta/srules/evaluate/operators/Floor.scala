@@ -1,11 +1,13 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.syntax.all.*
+
 object Floor:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -16,14 +18,14 @@ object Floor:
       ): Either[EvaluationError, Expr] =
         args
           .traverse(evaluator.evaluate(_, ctx))
-          .flatTap(_.exactly(1, op))
-          .flatMap(v => floor(op, v.head))
+          .flatMap(_.withExactly1(op))
+          .flatMap(floor(op, _).leftMap(_.opError(op, args)))
 
-      private def floor(op: String, expr: Expr): Either[EvaluationError, Expr] =
+      private def floor(op: String, expr: Expr): Either[FailureReason, Expr] =
         expr match {
           case e: Expr.RInt    => Right(e)
           case l: Expr.RLong   => Right(l)
           case Expr.RDouble(d) => Right(Expr.RDouble(d.floor))
           case Expr.RFloat(f)  => Right(Expr.RFloat(f.floor))
-          case _               => Left(EvaluationError.InvalidArgumentType(op, List(expr)))
+          case _               => Left(FailureReason.InvalidArgumentType("Numeric", expr))
         }

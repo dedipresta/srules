@@ -5,21 +5,10 @@ import com.dedipresta.srules.evaluate.operators.*
 
 import munit.*
 
-final class MapFnSuite extends FunSuite {
+final class MapSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val mapFn        = MapFn[Ctx]()
-    Map(
-      "+"        -> Add(),
-      "*"        -> Multiply(),
-      "map"      -> mapFn,
-      "var"      -> VarFromMapAny(),
-      "toDouble" -> ToDouble(),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate a map expression on a list of ints") {
     assertEquals(

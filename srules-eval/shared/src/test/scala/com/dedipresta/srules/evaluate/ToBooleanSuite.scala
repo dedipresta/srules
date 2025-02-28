@@ -2,19 +2,14 @@ package com.dedipresta.srules.evaluate
 
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.operators.*
+
 import munit.*
 
 final class ToBooleanSuite extends FunSuite {
 
-  type Ctx = Map[Boolean, Any]
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    Map(
-      "toBoolean" -> ToBoolean[Ctx](),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
-  
   test("parse and evaluate toBoolean function (int)") {
     assertEquals(
       Parser.parser.parseAll("toBoolean(42)").flatMap(evaluator.evaluate(_, Map.empty)),

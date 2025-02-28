@@ -2,19 +2,13 @@ package com.dedipresta.srules.evaluate
 
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.operators.*
+
 import munit.*
 
 final class ToDoubleSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
-
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    Map(
-      "toDouble" -> ToDouble(),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
-
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
   test("parse and evaluate toDouble function (int)") {
     assertEquals(
@@ -64,6 +58,5 @@ final class ToDoubleSuite extends FunSuite {
       Right(Expr.RDouble(0.0)),
     )
   }
-
 
 }

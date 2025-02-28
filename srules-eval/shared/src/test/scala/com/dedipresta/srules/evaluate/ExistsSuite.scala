@@ -7,37 +7,26 @@ import munit.*
 
 final class ExistsSuite extends FunSuite {
 
-  type Ctx = Map[String, Any]
+  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
+  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
 
-  val operators: Map[String, Operator[Ctx, EvaluationError]] =
-    val not      = Not[Ctx]()
-    Map(
-      "!"      -> not,
-      "not"    -> not, // alias
-      "+"      -> Add(),
-      "var"    -> VarFromMapAny(),
-      "exists" -> Exists(),
-    )
-
-  val evaluator = new ExprEvaluatorImpl[Ctx](operators)
-
-  test("parse and evaluate exists function on a variable that exists") {
+  test("parse and evaluate exists function on a list (true)") {
     assertEquals(
-      Parser.parser.parseAll("exists($var1)").flatMap(evaluator.evaluate(_, Map("var1" -> 4))),
+      Parser.parser.parseAll("exists([1, 2, 3], value() > 2)").flatMap(evaluator.evaluate(_, Map.empty)),
       Right(Expr.RBoolean(true)),
     )
   }
 
-  test("parse and evaluate exists function on a variable that does not exist") {
+  test("parse and evaluate exists function on a list (true computed)") {
     assertEquals(
-      Parser.parser.parseAll("exists($var1)").flatMap(evaluator.evaluate(_, Map.empty)),
-      Right(Expr.RBoolean(false)),
+      Parser.parser.parseAll("exists([1, 2, 1+1+1], value() > 2)").flatMap(evaluator.evaluate(_, Map.empty)),
+      Right(Expr.RBoolean(true)),
     )
   }
 
-  test("parse and evaluate !exists function on a variable that exists") {
+  test("parse and evaluate exists function on a list (false)") {
     assertEquals(
-      Parser.parser.parseAll("not(exists($var1))").flatMap(evaluator.evaluate(_, Map("var1" -> 4))),
+      Parser.parser.parseAll("exists([1, 2, 3], value() > 3)").flatMap(evaluator.evaluate(_, Map.empty)),
       Right(Expr.RBoolean(false)),
     )
   }

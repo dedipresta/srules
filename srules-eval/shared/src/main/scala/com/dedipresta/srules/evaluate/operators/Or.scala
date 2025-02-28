@@ -7,6 +7,7 @@ import com.dedipresta.srules.evaluate.syntax.*
 import cats.syntax.all.*
 
 object Or:
+
   def apply[Ctx](): Operator[Ctx, EvaluationError] =
     new Operator[Ctx, EvaluationError]:
       def evaluate(
@@ -15,12 +16,17 @@ object Or:
           args: List[Expr],
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
-        // no traverse since we do not want to evaluate all arguments since we want to short-circuit evaluation
+        // no traverse since we want to short-circuit evaluation as soon as we find a true value
         args
-          .foldLeft(false.asRight[EvaluationError])((acc, v) =>
-            for {
-              b     <- acc
-              value <- if (b) acc else evaluator.evaluate(v, ctx).flatMap(_.mapBoolean(op, c => b || c))
-            } yield value,
+          .foldLeft(false.asRight[EvaluationError])((acc, v) => // neutral element for OR is false
+            acc.flatMap {
+              case true => acc // bool condition is true, no need to evaluate the rest of the arguments
+              case _    =>
+                // evaluate before use
+                evaluator
+                  .evaluate(v, ctx)
+                  // read it as boolean (it becomes the next acc value ; false || other = other)
+                  .flatMap(_.withBoolean.leftMap(EvaluationError.OperationFailure(op, args, _)))
+            },
           )
-          .map(Expr.RBoolean.apply)
+          .map(_.toExpr)
