@@ -12,7 +12,7 @@ object Fail:
     new Operator[Ctx, EvaluationError]:
       def evaluate(evaluator: ExprEvaluator[Ctx, EvaluationError], op: String, args: List[Expr], ctx: RuleCtx[Ctx]): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withOptional(op))
           .flatMap {
             case None                  => Left(EvaluationError.OperationFailure(op, args, FailureReason.Message("Fail operator called")))

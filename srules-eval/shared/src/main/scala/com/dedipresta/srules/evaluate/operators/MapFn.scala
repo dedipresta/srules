@@ -19,12 +19,12 @@ object MapFn:
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
-                data <- evaluator.evaluate(expr, ctx).flatMap(_.withList.leftMap(EvaluationError.OperationFailure(op, args, _)))
+                data <- evaluator.evaluatedToList(op, expr, ctx)
                 res  <- data.zipWithIndex
                           .foldLeft[Either[EvaluationError, Vector[Expr]]](Vector.empty.asRight) { case (acc, (expr, index)) =>
                             acc.flatMap { (accValue: Vector[Expr]) =>
                               for {
-                                evaluated <- evaluator.evaluate(expr, ctx)
+                                evaluated <- evaluator.deepEvaluateFunctions(expr, ctx)
                                 expr      <- evaluator.evaluate(fn, ctx.withIndexedValue(index, evaluated))
                               } yield accValue.appended(expr)
                             }

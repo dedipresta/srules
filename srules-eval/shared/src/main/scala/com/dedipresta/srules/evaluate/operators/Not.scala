@@ -17,6 +17,6 @@ object Not:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly1(op))
-          .flatMap(_.mapBoolean(!_).bimap(EvaluationError.OperationFailure(op, args, _), _.toExpr))
+          .flatMap(evaluator.evaluatedToBoolean(op, _, ctx).map(b => (!b).toExpr))

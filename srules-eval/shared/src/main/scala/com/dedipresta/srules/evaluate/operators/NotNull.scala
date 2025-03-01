@@ -1,9 +1,10 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
+
+import cats.syntax.all.*
 
 object NotNull:
 
@@ -16,7 +17,8 @@ object NotNull:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .withExactly1(op)
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
+          .flatMap(_.withExactly1(op))
           .flatMap {
             case Expr.RNull => Right(false.toExpr)
             case other      => Right(true.toExpr)

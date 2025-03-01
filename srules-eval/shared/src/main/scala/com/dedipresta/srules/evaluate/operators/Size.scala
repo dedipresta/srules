@@ -12,7 +12,7 @@ object Size:
     new Operator[Ctx, EvaluationError]:
       def evaluate(evaluator: ExprEvaluator[Ctx, EvaluationError], op: String, args: List[Expr], ctx: RuleCtx[Ctx]): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly1(op))
           .flatMap {
             case Expr.RList(ls)  => Right(Expr.RInt(ls.size))

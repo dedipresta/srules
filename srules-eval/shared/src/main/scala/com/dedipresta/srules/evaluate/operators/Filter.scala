@@ -19,8 +19,8 @@ object Filter:
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
-                ls   <- evaluator.evaluate(expr, ctx).flatMap(_.withList.leftMap(EvaluationError.OperationFailure(op, args, _)))
-                data <- ls.traverse(evaluator.evaluate(_, ctx)) // evaluate inner list elements, no short-circuit so we can do a traverse
+                ls   <- evaluator.evaluatedToList(op, expr, ctx)
+                data <- ls.traverse(evaluator.deepEvaluateFunctions(_, ctx))
                 res  <- filter(evaluator, op, args, ctx, fn, data)
               } yield res
             case (_, other)                 => Left(FailureReason.InvalidArgumentType("Function", other)).opError(op, args)
@@ -35,9 +35,9 @@ object Filter:
           data: List[Expr],
       ): Either[EvaluationError, Expr.RList] =
         data.zipWithIndex
-          .flatTraverse { (el, i) =>
+          .flatTraverse((el, i) =>
             evaluator
-              .evaluate(fn, ctx.withIndexedValue(i, el))
-              .flatMap(_.mapBoolean(b => Option.when(b)(el).toList).leftMap(EvaluationError.OperationFailure(op, args, _)))
-          }
+              .evaluatedToBoolean(op, fn, ctx.withIndexedValue(i, el))
+              .map(b => Option.when(b)(el).toList),
+          )
           .map(_.toExpr)

@@ -17,7 +17,7 @@ object Index:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly0(op)) // no argument
           .map(_.toIndexVar)
-          .flatMap(evaluator.evaluate(_, ctx))
+          .flatMap(evaluator.deepEvaluateFunctions(_, ctx))

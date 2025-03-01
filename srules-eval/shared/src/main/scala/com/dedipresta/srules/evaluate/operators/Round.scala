@@ -1,9 +1,10 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
+
+import cats.syntax.all.*
 
 object Round:
 
@@ -16,7 +17,7 @@ object Round:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly1(op))
           .flatMap(ceil(op, _).leftMap(_.opError(op, args)))
 

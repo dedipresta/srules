@@ -1,9 +1,10 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
+
+import cats.syntax.all.*
 
 object IndexOf:
 
@@ -16,8 +17,8 @@ object IndexOf:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
-          .flatMap(_.withExactly2(op))
+          .withExactly2(op)
+          .flatMap((expr1, expr2) => evaluator.deepEvaluateFunctions(expr1, ctx).map((_, expr2)))
           .flatMap {
             case (Expr.RList(list), value)  => list.indexOf(value).toExpr.asRight
             case (Expr.RString(str), value) => value.mapString(str.indexOf).bimap(_.opError(op, args), _.toExpr)

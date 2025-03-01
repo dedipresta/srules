@@ -19,18 +19,15 @@ object Named:
         if (args.length == 1) // single argument is a variable name
           args
             .withExactly1(op)
-            .flatMap(evaluator.evaluate(_, ctx))
-            .flatMap(_.mapString(_.toNamedVar).leftMap(_.opError(op, args)))
-            .flatMap(evaluator.evaluate(_, ctx))
+            .flatMap(evaluator.evaluatedToString(op, _, ctx).map(_.toNamedVar))
+            .flatMap(evaluator.deepEvaluateFunctions(_, ctx))
         else
           args
             .withExactly3(op)
             .flatMap { case (nameExpr, namedExpr, expr) =>
-              println(s"Named: nameExpr: $nameExpr, namedExpr: $namedExpr, expr: $expr")
               for {
-                name  <- evaluator.evaluate(nameExpr, ctx).flatMap(_.withString.leftMap(_.opError(op, args)))
-                named <- evaluator.evaluate(namedExpr, ctx)
-                value <- evaluator.evaluate(expr, ctx.addNamedValue(name, named))
+                name  <- evaluator.evaluatedToString(op, nameExpr, ctx)
+                value <- evaluator.deepEvaluateFunctions(expr, ctx.addNamedValue(name, namedExpr)) // namedExpr given not evaluated
               } yield value
 
             }

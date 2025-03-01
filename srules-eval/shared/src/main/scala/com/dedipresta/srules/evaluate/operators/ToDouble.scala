@@ -17,7 +17,7 @@ object ToDouble:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly1(op))
           .flatMap(v => toDouble(op, v).bimap(_.opError(op, args), _.toExpr))
 

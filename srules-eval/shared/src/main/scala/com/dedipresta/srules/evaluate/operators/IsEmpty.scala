@@ -17,7 +17,7 @@ object IsEmpty:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly1(op))
           .flatMap {
             case Expr.RString(s) => Right(s.isEmpty.toExpr)

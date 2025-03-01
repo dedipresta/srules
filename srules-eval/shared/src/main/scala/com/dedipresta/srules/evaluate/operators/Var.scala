@@ -17,7 +17,7 @@ object Var:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.with1Or2(op))
           .flatMap {
             case (Expr.RString(name), defaultValue) =>

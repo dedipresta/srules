@@ -2,7 +2,9 @@
 
 [![Scala 3](https://img.shields.io/badge/Scala-3-blue)](https://www.scala-lang.org/)
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.18.0.svg)](https://www.scala-js.org)
+![version](https://img.shields.io/badge/semver-1.0.0-success.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/licenses/MIT)
+[![made with love](https://img.shields.io/badge/Made_with-❤-red.svg)](https://www.dedipresta.com)
 
 Rules parsing and evaluation for scala 3 built on top of `cats`.
 
@@ -11,11 +13,11 @@ It is inspired by JsonLogic but uses simple strings to define rules instead of J
 
 Motivation:
 
-- serialization and deserialization of rules
-- access to a context provided by the user (read variables)
-- extensibility with custom operators
-- ability to evaluate to different types (Boolean, Int, Long, Float, Double, String, List)
-- human readable rules
+1. serialization and deserialization of rules
+1. access to a context provided by the user (read variables)
+1. extensibility with custom operators
+1. ability to evaluate to different types (Boolean, Int, Long, Float, Double, String, List)
+1. human readable rules
 
 ## Sample Rules
 
@@ -66,20 +68,45 @@ libraryDependencies += "com.dedipresta" %%% "srules-core" % version // ADT + par
 libraryDependencies += "com.dedipresta" %%% "srules-eval" % version // default evaluator and operators
 ```
 
+## Usage
+
+```scala 3
+import cats.syntax.all.*
+import com.dedipresta.srules.given // for show instance
+import com.dedipresta.srules.*
+import com.dedipresta.srules.evaluate.operators.*
+
+// a given to read variables from your model, to make it easy we'll use a Map[String, Expr]
+// required by the `var` operator
+given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+
+// an evaluator with the operators you want to use
+val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+
+val model: Map[String, Expr] = Map[String, Expr]("var1" -> SRules.parseOrThrow("-42"))
+
+SRules.parse("abs($var1)").flatMap(evaluator.evaluateAll(_, model)) // res: Right(RInt(42))
+SRules.parse("abs($var1)").flatMap(evaluator.evaluateAllAs[Int](_, model)) // res: Right(42)
+SRules.parse("[1,2,1+1+1]").flatMap(evaluator.evaluateAllAsList[Int](_, model)) // res: Right(List(1, 2, 3))
+```
+
+`DefaultOperators.all` is a map that associates the operator name to its implementation allowing (filtering, adding,
+aliasing operators).
+
 ## Understanding Rules Parsing
 
-Parsing of the rule result in an unevaluated `Expr` ADT.
-No context is required to parse a rule.
+Parsing of the rule results in an unevaluated `Expr` ADT.
+No context is required to parse a rule .
 
 ```scala
 import com.dedipresta.srules.*
 
-val rule: Either[cats.parse.Parser.Error, Expr] = Parser.parser.parseAll("($a + 3) * $b")
+val rule: Either[cats.parse.Parser.Error, Expr] = SRules.parse("($a + 3) * $b")
 ```
 
 ### Values of `Expr` and rewriting rules
 
-```scala
+```scala 3
 case object RNull extends Expr
 
 case class RBoolean(value: Boolean) extends Expr
@@ -118,7 +145,7 @@ and the operands as `args`.
 RFunction("someName", List(arg1, arg2, arg3))
 ```
 
-Here are some examples of rewriting rules:
+Here, are some examples of rewriting rules:
 
 ```scala
 // value() is rewritten as
@@ -189,6 +216,22 @@ There are some built-in variables that can be used in rules:
 
 ## Understanding Rules Evaluation
 
+To evaluate a rule, you will need an `ExprEvaluator[Ctx,E]` that is configured with your custom rules or uses the
+default.
+It will evaluate the `Expr` with a given context of type `Ctx` and return an `Expr` result or an error of type `E`.
+
+```scala 3
+given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+// evaluate the parsed expression with an empty context
+SRules.parse("abs(-42)").flatMap(evaluator.evaluateAll(_, Map.empty))
+// res: Right(RInt(42))
+```
+
+The evaluator delegates the evaluation to the operators that are provided to it (see `Building a Custom Operator`).
+
+Each operator is responsible for evaluating its arguments and returning the result or an error.
+
 ## Default Operators
 
 | Name        | Aliases  | Nb arguments | Description                                                                              | Example                                                                 |
@@ -244,9 +287,9 @@ There are some built-in variables that can be used in rules:
 | `var`       |          | [1,2]        | Access to context variables `You should implement UserContextReader[Ctx] for your model` | `$age > 18`, `var("name", 42)`                                          |
 | `value`     |          | 0            | Access to the current value in a higher order function                                   | `map([1,2,3], value()*2)`                                               |
 
-## Custom Operators
+## Building a Custom Operator
 
-You may want to add your own operators or replace existing ones.
+You may want to add your own operators or replace existing ones that do not fit your needs.
 
 You'll need to implement `Operator` trait and more precisely its `evaluate` method.
 
@@ -263,9 +306,8 @@ trait Operator[Ctx, E] {
 
 1. If your operator wants an access to the user provided context, you should require a `UserContextReader[Ctx]` (see the
    dedicated part of the docs).
-1. If your operator has no short-circuit behavior, you may evaluate the arguments list with a traverse, otherwise you
-   may want to evaluate the arguments one by one.
-1. Provide your custom logic and return the result as an `Expr` or an error message in an `Either`.
+1. Then you need to evaluate the arguments you will use in your operator (see `Evaluating Arguments`).
+1. Finally, you can provide your custom logic and return the result as an `Expr` or an error message in an `Either`.
 
 Let's take an example with `isEmpty` that checks if a string or a list is empty.
 
@@ -288,7 +330,7 @@ object IsEmpty {
                     ctx: RuleCtx[Ctx],
                   ): Either[EvaluationError, Expr] =
         args // raw args of the operator (may reference variables, be another operator)
-          .traverse(evaluator.evaluate(_, ctx)) // evaluation of the arguments before use
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx)) // evaluation of the arguments before use
           .flatMap(_.withExactly1(op)) // some helpers that check that the number of arguments is correct
           .flatMap {
             case Expr.RString(s) => Right(s.isEmpty.toExpr)
@@ -317,22 +359,62 @@ object Or {
           .foldLeft(false.asRight[EvaluationError])((acc, v) => // neutral element for OR is false
             acc.flatMap {
               case true => acc // bool condition is true, no need to evaluate the rest of the arguments
-              case _ =>
-                // evaluate before use
-                evaluator.evaluate(v, ctx)
-                  // read it as boolean (it becomes the next acc value ; false || other = other)
-                  .flatMap(_.withBoolean.leftMap(EvaluationError.OperationFailure(op, args, _)))
-            }
+              // evaluate before use ; it becomes the next acc value ; false || other = other)
+              case _ => evaluator.evaluatedToBoolean(op, v, ctx)
+            },
           )
           .map(_.toExpr) // convert the final boolean to a Boolean Expr
     }
 }
 ```
 
-## Reading from User Context
+### Evaluating Arguments
 
-Most of the time, operators will not need to access the user context, but will only pass it to evaluator for
-sub-expressions.
+When evaluating the arguments of an operator, you may want to evaluate them all at once (traverse) or one by one (e.g
+foldLeft) if you want to short-circuit the evaluation.
+
+1. generally you will need to greedily evaluate an argument so you may use the syntax helper
+   `evaluator.deepEvaluateFunctions` that will evaluate `the expression and its result` when it is a function. It allows
+   to handle operators that return complex expressions (functions).
+1. when you do not want to evaluate the result of a function, you may use `evaluator.evaluate` directly.
+1. when you want a deep evaluation of functions and list of expressions, you may use
+   `evaluator.deepEvaluateFunctionsAndLists`.
+
+Let's take an example to understand the difference between `evaluate`, `deepEvaluateFunctions` and
+`deepEvaluateFunctionsAndLists`.
+
+Here, the operator that will return complex expressions (functions) will be our `var` operator that reads from a context
+that may return `Expr` being complex expressions.
+
+```scala
+val userCtx: Map[String, Expr] = Map[String, Expr](
+  "simpleFunction" -> SRules.parseOrThrow("1+1"), // RFunction("+", List(RInt(1), RInt(1)))
+  "unevaluatedList" -> SRules.parseOrThrow("[1, $simpleFunction]"), // RList(List(RInt(1), RFunction("var", List(RString("simpleFunction")))))
+)
+
+// parsing and evaluation of expr=`$simpleFunction` then, call of `show` on the result
+// evaluator.evaluate                       """(1+1)""" // var returns a function, evaluate returns it as is
+// evaluator.deepEvaluateFunctions          """2""" // var return a function, deepEvaluateFunctions evaluates it
+// evaluator.deepEvaluateFunctionsAndLists  """2""" // var returns a function, deepEvaluateFunctionsAndLists evaluates it
+
+// parsing and evaluation of expr=`$unevaluatedList` then, call of `show` on the result
+// evaluator.evaluate                       """[1,var("simpleFunction")]""" // var returns a list, evaluate returns it as is
+// evaluator.deepEvaluateFunctions          """[1,var("simpleFunction")]""" // var returns a list, deepEvaluateFunctions returns it as is
+// evaluator.deepEvaluateFunctionsAndLists  """[1,2]""" // var returns a list, deepEvaluateFunctionsAndLists evaluates its expressions
+```
+
+### Syntax Helpers
+
+When writing an operator, you may use some syntax helpers to extract values from the arguments or check the count of
+them, just import the syntax helpers.
+
+```scala
+import com.dedipresta.srules.evaluate.syntax.*
+```
+
+## Reading the User Context
+
+Most of the time, operators will not need to access the user context, but will only pass it to evaluate sub-expressions.
 
 To allow an operator to access the user context you should give it a `UserContextReader[Ctx]` as a given parameter, then
 you may use this instance to read variables. `Ctx` is the type of your data model.
@@ -344,33 +426,21 @@ trait UserContextReader[Ctx] {
 }
 ```
 
-It means that you have to provide a way to read a variable, by name, from your data model.
+It means that you have to provide a way to read a variable, by name, from your data model and return an `Expr` so it can
+be used in the evaluation.
 
 It also means that you can define how to handle requested variables that are not found in your data model, like
 returning `Expr.RNull` or an error.
 
-As an example, let's consider an implementation for a context that is a `Map[String, Any]` (available with
-`UserContextReader.forMapAny`).
+As an example, let's consider an implementation for a context that is a `Map[String, Expr]` (available with
+`UserContextReader.forMapExpr`).
 
 ```scala
-def forMapAny(notFoundToNull: Boolean): UserContextReader[Map[String, Any]] =
-  new UserContextReader[Map[String, Any]] {
-    def read(ctx: Map[String, Any], name: String, defaultValue: Option[Expr]): Either[EvaluationError, Expr] =
+def forMapExpr(notFoundToNull: Boolean): UserContextReader[Map[String, Expr]] = {
+  new UserContextReader[Map[String, Expr]] {
+    def read(ctx: Map[String, Expr], name: String, defaultValue: Option[Expr]): Either[EvaluationError, Expr] =
       ctx.get(name) match {
-        case Some(value) =>
-          value match {
-            // WARNING: this is a simple example that is OK on JVM,
-            // but pattern matching on numeric types from Any is not reliable with scala.js runtime
-            // i.e 42.0f will be seen as an Int, no way to distinguish between Float and Double, ...
-            // e.g wrap the values in a custom type, provide some type information, ...
-            case v: Int => Right(Expr.RInt(v))
-            case v: Long => Right(Expr.RLong(v))
-            case v: Float => Right(Expr.RFloat(v))
-            case v: Double => Right(Expr.RDouble(v))
-            case v: String => Right(Expr.RString(v))
-            case v: Boolean => Right(Expr.RBoolean(v))
-            case v => Left(EvaluationError.UnsupportedVariableType(name))
-          }
+        case Some(value) => value.asRight
         case None =>
           defaultValue match {
             case Some(v) => v.asRight
@@ -378,6 +448,22 @@ def forMapAny(notFoundToNull: Boolean): UserContextReader[Map[String, Any]] =
           }
       }
   }
+}
 ```
 
+`WARNING` you may not directly use a `Map[String, Any]` when using the `scala.js` runtime since pattern matching on
+numeric types from `Any` is not reliable.
+For example 42.0f will be seen as an Int and there is no way to distinguish between Float and Double, ...
+So you'll have to wrap the values in a custom type (here we use `Expr` or provide some type information in the data or
+in the var name, ...
+
+## Show
+
+```scala 3
+import com.dedipresta.srules.given // for show instance
+```
+
+A `Show[Expr]` instance is provided to serialize an `Expr` to a human readable string.
+The resulting string is a valid rule that can be parsed again, to the same `Expr`.
+Nonetheless, it may differ from the original String (extra parentheses, explicit types, ...).
 

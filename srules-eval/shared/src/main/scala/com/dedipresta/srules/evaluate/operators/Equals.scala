@@ -18,7 +18,7 @@ object Equals:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap { evaluated =>
             evaluated.headOption match {
               case Some(head) => Right(Expr.RBoolean(evaluated.forall(_ == head)))

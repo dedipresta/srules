@@ -17,7 +17,7 @@ object And:
     ): Either[EvaluationError, Expr] =
       // no traverse since we do not want to evaluate all arguments since we want to short-circuit evaluation
       args
-        .foldEvaluateExtractWhile(evaluator, op, ctx)(true) { (acc, current) =>
+        .foldDeepEvaluateWhile(evaluator, op, ctx)(true) { (acc, current) =>
           val and = acc && current
           (and, and)
         }

@@ -21,12 +21,8 @@ object Or:
           .foldLeft(false.asRight[EvaluationError])((acc, v) => // neutral element for OR is false
             acc.flatMap {
               case true => acc // bool condition is true, no need to evaluate the rest of the arguments
-              case _    =>
-                // evaluate before use
-                evaluator
-                  .evaluate(v, ctx)
-                  // read it as boolean (it becomes the next acc value ; false || other = other)
-                  .flatMap(_.withBoolean.leftMap(EvaluationError.OperationFailure(op, args, _)))
+              // evaluate before use ; it becomes the next acc value ; false || other = other)
+              case _    => evaluator.evaluatedToBoolean(op, v, ctx)
             },
           )
           .map(_.toExpr)

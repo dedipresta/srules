@@ -24,7 +24,7 @@ object Find:
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
-                data <- evaluator.evaluate(expr, ctx).flatMap(_.withList.leftMap(EvaluationError.OperationFailure(op, args, _)))
+                data <- evaluator.evaluatedToList(op, expr, ctx)
                 res  <- data.zipWithIndex
                           .foldLeft[Either[EvaluationError, Option[Expr]]](Option.empty[Expr].asRight) { case (acc, (expr, index)) =>
                             acc.flatMap { (optValue: Option[Expr]) =>
@@ -32,10 +32,9 @@ object Find:
                                 case Some(_) => acc
                                 case None    =>
                                   for {
-                                    evaluated <- evaluator.evaluate(expr, ctx)
-                                    result    <- evaluator.evaluate(fn, ctx.withIndexedValue(index, evaluated))
-                                    asBool    <- result.withBoolean.leftMap(EvaluationError.OperationFailure(op, args, _))
-                                  } yield if (asBool) Some(evaluated) else None
+//                                    evaluated <- evaluator.evaluate(expr, ctx)
+                                    b <- evaluator.evaluatedToBoolean(op, fn, ctx.withIndexedValue(index, expr)) // put expr not evaluated
+                                  } yield Option.when(b)(expr)
                               }
                             }
                           }

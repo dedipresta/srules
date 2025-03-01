@@ -2,33 +2,34 @@ package com.dedipresta.srules.evaluate
 
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.operators.*
+import com.dedipresta.srules.evaluate.syntax.*
 
 import munit.*
 
 final class ExprEvaluatorJsSuite extends FunSuite {
 
-  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
-  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
+  given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator                              = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
 
-  // cast from ANy have pitfalls on scala.js runtime
+  // cast from Any have pitfalls on scala.js runtime
 
-  test("parse and evaluate variable expression (double 0.5d => float)") {
+  test("parse and evaluate variable expression (double 0.5d)") {
     assertEquals(
-      Parser.parser.parseAll("$var1").flatMap(evaluator.evaluate(_, Map("var1" -> 0.5d))),
-      Right(Expr.RFloat(0.5f)),
+      Parser.parser.parseAll("$var1").flatMap(evaluator.evaluate(_, Map("var1" -> 0.5d.toExpr))),
+      Right(Expr.RDouble(0.5)),
     )
   }
 
-  test("parse and evaluate variable expression (double 42.0d => int)") {
+  test("parse and evaluate variable expression (float 42.0f)") {
     assertEquals(
-      Parser.parser.parseAll("$var1").flatMap(evaluator.evaluate(_, Map("var1" -> 42.0d))),
-      Right(Expr.RInt(42)),
+      Parser.parser.parseAll("$var1").flatMap(evaluator.evaluate(_, Map("var1" -> 42.0f.toExpr))),
+      Right(Expr.RFloat(42.0f)),
     )
   }
 
-  test("parse and evaluate variable expression (float 42.0d => int)") {
+  test("parse and evaluate variable expression (int 42)") {
     assertEquals(
-      Parser.parser.parseAll("$var1").flatMap(evaluator.evaluate(_, Map("var1" -> 42.0f))),
+      Parser.parser.parseAll("$var1").flatMap(evaluator.evaluate(_, Map("var1" -> 42.toExpr))),
       Right(Expr.RInt(42)),
     )
   }

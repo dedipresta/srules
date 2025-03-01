@@ -6,13 +6,13 @@ import com.dedipresta.srules.evaluate.operators.*
 import munit.*
 
 final class ValueSuite extends FunSuite {
-  
-  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
-  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
+
+  given UserContextReader[Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
 
   test("parse and evaluate named expression") {
     assertEquals(
-      Parser.parser.parseAll("""value()""").flatMap(evaluator.evaluate(_, Map.empty)),
+      SRules.parse("""value()""").flatMap(evaluator.evaluate(_, Map.empty)),
       Left(EvaluationError.VariableNotFound("__value__")),
     )
   }

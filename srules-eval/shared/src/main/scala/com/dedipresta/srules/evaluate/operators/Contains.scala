@@ -17,7 +17,7 @@ object Contains:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly2(op))
           .flatMap {
             case (Expr.RList(list), value)  => list.contains(value).toExpr.asRight

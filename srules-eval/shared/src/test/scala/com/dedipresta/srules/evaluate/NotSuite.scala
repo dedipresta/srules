@@ -7,19 +7,19 @@ import munit.*
 
 final class NotSuite extends FunSuite {
 
-  given UserContextReader[Map[String, Any]] = UserContextReader.forMapAny(notFoundToNull = true)
-  val evaluator                             = new ExprEvaluatorImpl[Map[String, Any]](DefaultOperators.all)
+  given UserContextReader[Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
 
   test("parse and evaluate not expression") {
     assertEquals(
-      Parser.parser.parseAll("!true").flatMap(evaluator.evaluate(_, Map.empty)),
+      SRules.parse("!true").flatMap(evaluator.evaluate(_, Map.empty)),
       Right(Expr.RBoolean(false)),
     )
   }
 
   test("parse and evaluate not expression (comuted)") {
     assertEquals(
-      Parser.parser.parseAll("!(true&&false)").flatMap(evaluator.evaluate(_, Map.empty)),
+      SRules.parse("!(true&&false)").flatMap(evaluator.evaluate(_, Map.empty)),
       Right(Expr.RBoolean(true)),
     )
   }

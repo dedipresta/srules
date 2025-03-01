@@ -6,7 +6,7 @@ import cats.parse.Rfc5234.alpha
 import cats.parse.Rfc5234.digit
 import cats.parse.Rfc5234.dquote
 
-object Parser {
+private[srules] object Parser {
 
   import Expr.*
 

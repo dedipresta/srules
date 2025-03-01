@@ -18,7 +18,7 @@ object Divide:
       ): Either[EvaluationError, Expr] =
 
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly2(op))
           .flatMap {
             case (Expr.RInt(a), Expr.RInt(b))       => Either.catchNonFatal(Expr.RInt(a / b))

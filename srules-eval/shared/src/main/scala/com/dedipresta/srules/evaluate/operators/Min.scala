@@ -12,7 +12,7 @@ object Min:
     new Operator[Ctx, EvaluationError]:
       def evaluate(evaluator: ExprEvaluator[Ctx, EvaluationError], op: String, args: List[Expr], ctx: RuleCtx[Ctx]): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withAtLeast1(op))
           .flatMap {
             case (Expr.RInt(a), tail)    => tail.foldExtract(a)(_ min _).bimap(_.opError(op, args), _.toExpr)

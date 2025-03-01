@@ -19,8 +19,8 @@ object Reduce:
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
-                ls   <- evaluator.evaluate(expr, ctx).flatMap(_.withList.leftMap(EvaluationError.OperationFailure(op, args, _)))
-                data <- ls.traverse(evaluator.evaluate(_, ctx))                    // evaluate inner list elements
+                ls   <- evaluator.evaluatedToList(op, expr, ctx)
+                data <- ls.traverse(evaluator.deepEvaluateFunctions(_, ctx))
                 head <- data.headOption.toRight(EvaluationError.OperatorRequiresNonEmptyList(op, args))
                 acc   = ctx.withAccumulator(index = 0, current = head, acc = head) // not correct but temporary
                 res  <- data.tail.zipWithIndex

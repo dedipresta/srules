@@ -18,7 +18,6 @@ object ToString:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap(_.withExactly1(op))
-          .map(_.show)
-          .map(_.toExpr)
+          .map(_.show.toExpr)

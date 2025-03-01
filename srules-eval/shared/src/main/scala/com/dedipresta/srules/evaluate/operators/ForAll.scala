@@ -24,16 +24,15 @@ object ForAll:
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
-                data <- evaluator.evaluate(expr, ctx).flatMap(_.withList.leftMap(EvaluationError.OperationFailure(op, args, _)))
+                data <- evaluator.evaluatedToList(op, expr, ctx)
                 res  <- data.zipWithIndex
                           .foldLeft[Either[EvaluationError, Boolean]](true.asRight) { case (acc, (expr, index)) =>
                             acc.flatMap { (accValue: Boolean) =>
                               if (accValue)
                                 for {
                                   evaluated <- evaluator.evaluate(expr, ctx)
-                                  result    <- evaluator.evaluate(fn, ctx.withIndexedValue(index, evaluated))
-                                  asBool    <- result.withBoolean.leftMap(EvaluationError.OperationFailure(op, args, _))
-                                } yield asBool
+                                  b         <- evaluator.evaluatedToBoolean(op, fn, ctx.withIndexedValue(index, evaluated))
+                                } yield b
                               else acc
                             }
                           }

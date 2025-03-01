@@ -16,12 +16,12 @@ object Exists:
           args: List[Expr],
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
-        args // FIXME OK ?
+        args
           .withExactly2(op)
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
-                data <- evaluator.evaluate(expr, ctx).flatMap(_.withList.leftMap(EvaluationError.OperationFailure(op, args, _)))
+                data <- evaluator.evaluatedToList(op, expr, ctx)
                 res  <- data.zipWithIndex
                           .foldLeft[Either[EvaluationError, Boolean]](false.asRight) { case (acc, (expr, index)) =>
                             acc.flatMap { (found: Boolean) =>
@@ -29,10 +29,9 @@ object Exists:
                                 acc
                               else
                                 for {
-                                  evaluated <- evaluator.evaluate(expr, ctx)
-                                  expr      <- evaluator.evaluate(fn, ctx.withIndexedValue(index, evaluated))
-                                  b         <- expr.withBoolean.leftMap(EvaluationError.OperationFailure(op, args, _))
-                                } yield b
+                                  v   <- evaluator.deepEvaluateFunctions(expr, ctx)
+                                  res <- evaluator.evaluatedToBoolean(op, fn, ctx.withIndexedValue(index, v))
+                                } yield res
                             }
                           }
               } yield res.toExpr

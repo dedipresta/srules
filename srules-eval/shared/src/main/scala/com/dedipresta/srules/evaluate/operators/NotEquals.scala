@@ -18,7 +18,7 @@ object NotEquals:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         args
-          .traverse(evaluator.evaluate(_, ctx))
+          .traverse(evaluator.deepEvaluateFunctions(_, ctx))
           .flatMap {
             case e1 :: e2 :: Nil => Right(Expr.RBoolean(e1 != e2)) // most common case
             case Nil             => Right(Expr.RBoolean(true))     // true by vacuous truth

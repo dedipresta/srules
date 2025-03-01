@@ -1,9 +1,10 @@
 package com.dedipresta.srules.evaluate.operators
 
-import cats.syntax.all.*
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
+
+import cats.syntax.all.*
 
 object LazyIf:
 
@@ -31,7 +32,7 @@ object LazyIf:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         for {
-          condValue <- evaluator.evaluate(cond, ctx).flatMap(_.withBoolean.leftMap(EvaluationError.OperationFailure(op, List(value), _)))
+          condValue <- evaluator.evaluatedToBoolean(op, cond, ctx)
           result    <- if (condValue) value.asRight else ifElse(evaluator, op, tail, ctx)
         } yield result
 

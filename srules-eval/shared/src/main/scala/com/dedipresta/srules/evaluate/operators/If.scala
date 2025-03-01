@@ -32,9 +32,9 @@ object If:
           ctx: RuleCtx[Ctx],
       ): Either[EvaluationError, Expr] =
         for {
-          condValue <- evaluator.evaluate(cond, ctx).flatMap(_.withBoolean.leftMap(EvaluationError.OperationFailure(op, List(value), _)))
+          condValue <- evaluator.evaluatedToBoolean(op, cond, ctx)
           result    <- if (condValue) value.asRight else ifElse(evaluator, op, tail, ctx)
-          evaluated <- evaluator.evaluate(result, ctx)
+          evaluated <- evaluator.deepEvaluateFunctions(result, ctx)
         } yield evaluated
 
       private def ifElse(
