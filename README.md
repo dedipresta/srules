@@ -21,42 +21,42 @@ Motivation:
 
 ## Sample Rules
 
-```txt
+```scala 3
 // basic arithmetic
 (7 + 3) * 2
 ```
 
-```txt
+```scala 3
 // access to context variables
 ($a / 2) * $b - 7
 ```
 
-```txt
+```scala 3
 // boolean operators
 $age > 18 && $country == "FR"
 ```
 
-```txt
+```scala 3
 // if-(elseif)*-else
 if($x>0, $value1, $y<=42, $value2, $default)
 ```
 
-```txt
+```scala 3
 // functions with variable number of arguments
 min($a, $b, $c) < 0
 ```
 
-```txt
+```scala 3
 // higher order functions
 map([1,2,3], value()*2)
 ```
 
-```txt
+```scala 3
 // acces to current value or index
 filter($list, index()%2 == 0)
 ```
 
-```txt
+```scala 3
 // access to accumulator
 reduce([1,2,3], acc()+value())
 ```
@@ -218,7 +218,7 @@ There are some built-in variables that can be used in rules:
 
 To evaluate a rule, you will need an `ExprEvaluator[Ctx,E]` that is configured with your custom rules or uses the
 default.
-It will evaluate the `Expr` with a given context of type `Ctx` and return an `Expr` result or an error of type `E`.
+It will evaluate the `Expr` with a given context (your data model) of type `Ctx` and return an `Expr` result or an error of type `E`.
 
 ```scala 3
 given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
@@ -454,7 +454,7 @@ def forMapExpr(notFoundToNull: Boolean): UserContextReader[Map[String, Expr]] = 
 `WARNING` you may not directly use a `Map[String, Any]` when using the `scala.js` runtime since pattern matching on
 numeric types from `Any` is not reliable.
 For example 42.0f will be seen as an Int and there is no way to distinguish between Float and Double, ...
-So you'll have to wrap the values in a custom type (here we use `Expr` or provide some type information in the data or
+So you'll have to wrap the values in a custom type (here we use `Expr`) or provide some type information in the data or
 in the var name, ...
 
 ## Show
