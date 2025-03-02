@@ -51,48 +51,104 @@ object ExprExtractor:
     case expr          => Left(FailureReason.InvalidArgumentType("List", expr))
   }
 
+  //   given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Int] =
+//    new ExprExtractor[F, Int]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RInt(i) => i.pure[F]
+//          case _            => FailureReason.InvalidArgumentType("Int", expr).raiseError[F, Int]
+//
+//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Long] =
+//    new ExprExtractor[F, Long]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RLong(i) => i.pure[F]
+//          case _             => FailureReason.InvalidArgumentType("Long", expr).raiseError[F, Long]
+//
+//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Double] =
+//    new ExprExtractor[F, Double]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RDouble(i) => i.pure[F]
+//          case _               => FailureReason.InvalidArgumentType("Double", expr).raiseError[F, Double]
+//
+//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Float] =
+//    new ExprExtractor[F, Float]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RFloat(i) => i.pure[F]
+//          case _              => FailureReason.InvalidArgumentType("Float", expr).raiseError[F, Float]
+//
+//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, String] =
+//    new ExprExtractor[F, String]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RString(i) => i.pure[F]
+//          case _               => FailureReason.InvalidArgumentType("String", expr).raiseError[F, String]
+//
+//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, (String, List[Expr])] =
+//    new ExprExtractor[F, (String, List[Expr])]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RFunction(name, args) => (name, args).pure[F]
+//          case _                          => FailureReason.InvalidArgumentType("Function", expr).raiseError[F, (String, List[Expr])]
+//
+//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Boolean] =
+//    new ExprExtractor[F, Boolean]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RBoolean(i) => i.pure[F]
+//          case _                => FailureReason.InvalidArgumentType("Boolean", expr).raiseError[F, Boolean]
+//
+//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, List[Expr]] =
+//    new ExprExtractor[F, List[Expr]]:
+//      def extract(expr: Expr) =
+//        expr match
+//          case Expr.RList(i) => i.pure[F]
+//          case _             => FailureReason.InvalidArgumentType("List", expr).raiseError[F, List[Expr]]
+
 extension (args: List[Expr]) {
 
-  def atLeast(n: Int, op: String): Either[EvaluationError, Unit] =
-    if args.length < n then Left(InvalidArgumentsCount.atLeast(n, args.length).opError(op, args)) else Right(())
-  def atMost(n: Int, op: String): Either[EvaluationError, Unit]  =
-    if args.length > n then Left(InvalidArgumentsCount.atMost(n, args.length).opError(op, args)) else Right(())
-  def exactly(n: Int, op: String): Either[EvaluationError, Unit] =
-    if args.length != n then Left(InvalidArgumentsCount.exactly(n, args.length).opError(op, args)) else Right(())
+  def atLeast[F[_]](n: Int, op: String)(using F: MonadError[F, EvaluationError]): F[Unit] =
+    if args.length < n then F.raiseError(InvalidArgumentsCount.atLeast(n, args.length).opError(op, args)) else ().pure[F]
+  def atMost[F[_]](n: Int, op: String)(using F: MonadError[F, EvaluationError]): F[Unit]  =
+    if args.length > n then F.raiseError(InvalidArgumentsCount.atMost(n, args.length).opError(op, args)) else ().pure[F]
+  def exactly[F[_]](n: Int, op: String)(using F: MonadError[F, EvaluationError]): F[Unit] =
+    if args.length != n then F.raiseError(InvalidArgumentsCount.exactly(n, args.length).opError(op, args)) else ().pure[F]
 
-  def withExactly0(op: String): Either[EvaluationError, Unit]               =
+  def withExactly0[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[Unit]               =
     args.exactly(0, op)
-  def withExactly1(op: String): Either[EvaluationError, Expr]               =
+  def withExactly1[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[Expr]               =
     args.exactly(1, op).as(args.head)
-  def withExactly2(op: String): Either[EvaluationError, (Expr, Expr)]       =
+  def withExactly2[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Expr)]       =
     args.exactly(2, op).as(args.head, args(1))
-  def withExactly3(op: String): Either[EvaluationError, (Expr, Expr, Expr)] =
+  def withExactly3[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Expr, Expr)] =
     args.exactly(3, op).as(args.head, args(1), args(2))
 
-  def withAtLeast1(op: String): Either[EvaluationError, (Expr, List[Expr])] =
+  def withAtLeast1[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, List[Expr])] =
     args.atLeast(1, op).as(args.head, args.tail)
 
-  def withAtLeast2(op: String): Either[EvaluationError, (Expr, Expr, List[Expr])] =
+  def withAtLeast2[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Expr, List[Expr])] =
     args.atLeast(2, op).as(args.head, args(1), args.drop(2))
 
-  def withOptional(op: String): Either[EvaluationError, Option[Expr]] =
+  def withOptional[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[Option[Expr]] =
     args match {
-      case Nil      => None.asRight
-      case h :: Nil => Some(h).asRight
-      case _        => InvalidArgumentsCount.atMost(1, args.length).opError(op, args).asLeft
+      case Nil      => None.pure[F]
+      case h :: Nil => Some(h).pure[F]
+      case _        => F.raiseError(InvalidArgumentsCount.atMost(1, args.length).opError(op, args))
     }
 
-  def with1Or2(op: String): Either[EvaluationError, (Expr, Option[Expr])]       =
+  def with1Or2[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Option[Expr])]       =
     args match {
-      case h :: Nil      => (h, None).asRight
-      case h :: t :: Nil => (h, Some(t)).asRight
-      case _             => InvalidArgumentsCount.atMost(2, args.length).opError(op, args).asLeft
+      case h :: Nil      => (h, None).pure[F]
+      case h :: t :: Nil => (h, Some(t)).pure[F]
+      case _             => F.raiseError(InvalidArgumentsCount.atMost(2, args.length).opError(op, args))
     }
-  def with2Or3(op: String): Either[EvaluationError, (Expr, Expr, Option[Expr])] =
+  def with2Or3[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Expr, Option[Expr])] =
     args match {
-      case h :: t :: Nil      => (h, t, None).asRight
-      case h :: t :: o :: Nil => (h, t, Some(o)).asRight
-      case _                  => InvalidArgumentsCount.atMost(3, args.length).opError(op, args).asLeft
+      case h :: t :: Nil      => (h, t, None).pure[F]
+      case h :: t :: o :: Nil => (h, t, Some(o)).pure[F]
+      case _                  => F.raiseError(InvalidArgumentsCount.atMost(3, args.length).opError(op, args))
     }
 
 }
@@ -126,68 +182,68 @@ extension (expr: Expr) {
   def mapList[T](f: List[Expr] => T): Either[FailureReason, T]               = withList.map(f)
 }
 
-extension [Ctx](ev: ExprEvaluator[Ctx, EvaluationError]) {
+extension [F[_], Ctx](ev: ExprEvaluator[F, Ctx, EvaluationError]) {
 
-  def evaluatedToBoolean(op: String, expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, Boolean] =
+  def evaluatedToBoolean(op: String, expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[Boolean] =
     expr match {
-      case v: Expr.RBoolean  => v.value.asRight
+      case v: Expr.RBoolean  => v.value.pure[F]
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(evaluatedToBoolean(op, _, ctx))
-      case _                 => EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Boolean", expr)).asLeft
+      case _                 => F.raiseError(EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Boolean", expr)))
     }
 
-  def evaluatedToInt(op: String, expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, Int] =
+  def evaluatedToInt(op: String, expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[Int] =
     expr match {
-      case v: Expr.RInt      => v.value.asRight
+      case v: Expr.RInt      => v.value.pure[F]
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(evaluatedToInt(op, _, ctx))
-      case _                 => EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Int", expr)).asLeft
+      case _                 => F.raiseError(EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Int", expr)))
     }
 
-  def evaluatedToLong(op: String, expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, Long] =
+  def evaluatedToLong(op: String, expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[Long] =
     expr match {
-      case v: Expr.RLong     => v.value.asRight
+      case v: Expr.RLong     => v.value.pure[F]
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(evaluatedToLong(op, _, ctx))
-      case _                 => EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Long", expr)).asLeft
+      case _                 => F.raiseError(EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Long", expr)))
     }
 
-  def evaluatedToFloat(op: String, expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, Float] =
+  def evaluatedToFloat(op: String, expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[Float] =
     expr match {
-      case v: Expr.RFloat    => v.value.asRight
+      case v: Expr.RFloat    => v.value.pure[F]
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(evaluatedToFloat(op, _, ctx))
-      case _                 => EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Float", expr)).asLeft
+      case _                 => F.raiseError(EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Float", expr)))
     }
 
-  def evaluatedToDouble(op: String, expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, Double] =
+  def evaluatedToDouble(op: String, expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[Double] =
     expr match {
-      case v: Expr.RDouble   => v.value.asRight
+      case v: Expr.RDouble   => v.value.pure[F]
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(evaluatedToDouble(op, _, ctx))
-      case _                 => EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Double", expr)).asLeft
+      case _                 => F.raiseError(EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("Double", expr)))
     }
 
-  def evaluatedToString(op: String, expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, String] =
+  def evaluatedToString(op: String, expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[String] =
     expr match {
-      case v: Expr.RString   => v.value.asRight
+      case v: Expr.RString   => v.value.pure[F]
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(evaluatedToString(op, _, ctx))
-      case _                 => EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("String", expr)).asLeft
+      case _                 => F.raiseError(EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("String", expr)))
     }
 
-  def evaluatedToList(op: String, expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, List[Expr]] =
+  def evaluatedToList(op: String, expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[List[Expr]] =
     expr match {
-      case v: Expr.RList     => v.value.asRight
+      case v: Expr.RList     => v.value.pure[F]
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(evaluatedToList(op, _, ctx))
-      case _                 => EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("List", expr)).asLeft
+      case _                 => F.raiseError(EvaluationError.OperationFailure(op, List(expr), FailureReason.InvalidArgumentType("List", expr)))
     }
 
-  def deepEvaluateFunctions(expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, Expr] =
+  def deepEvaluateFunctions(expr: Expr, ctx: RuleCtx[Ctx])(using F: MonadError[F, EvaluationError]): F[Expr] =
     expr match {
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(deepEvaluateFunctions(_, ctx))
-      case _                 => expr.asRight
+      case _                 => expr.pure[F]
     }
 
-  def deepEvaluateFunctionsAndLists(expr: Expr, ctx: RuleCtx[Ctx]): Either[EvaluationError, Expr] =
+  def deepEvaluateFunctionsAndLists(expr: Expr, ctx: RuleCtx[Ctx])(using MonadError[F, EvaluationError]): F[Expr] =
     expr match {
       case f: Expr.RFunction => ev.evaluate(f, ctx).flatMap(deepEvaluateFunctionsAndLists(_, ctx))
       case l: Expr.RList     => l.value.traverse(deepEvaluateFunctionsAndLists(_, ctx)).map(_.toExpr)
-      case _                 => expr.asRight
+      case _                 => expr.pure[F]
     }
 }
 
@@ -210,18 +266,18 @@ extension (args: List[Expr]) {
       } yield f(acc, extracted),
     )
 
-  def foldDeepEvaluateWhile[T: ExprExtractor, Ctx](
-      evaluator: ExprEvaluator[Ctx, EvaluationError],
+  def foldDeepEvaluateWhile[F[_], T: ExprExtractor, Ctx](
+      evaluator: ExprEvaluator[F, Ctx, EvaluationError],
       op: String,
       ctx: RuleCtx[Ctx],
-  )(start: T)(f: (T, T) => (T, Boolean)): Either[EvaluationError, (T, Boolean)] =
-    args.foldLeftM((start, true)) { case ((acc, stillOk), expr) =>
+  )(start: T)(f: (T, T) => (T, Boolean))(using F: MonadError[F, EvaluationError]): F[(T, Boolean)] =
+    args.foldLeftM[F, (T, Boolean)]((start, true)) { case ((acc, stillOk), expr) =>
       if (!stillOk)
-        (acc, stillOk).asRight
+        (acc, stillOk).pure[F]
       else
         for {
           evaluated <- evaluator.deepEvaluateFunctions(expr, ctx)
-          extracted <- summon[ExprExtractor[T]].extract(evaluated).leftMap(EvaluationError.OperationFailure(op, args, _))
+          extracted <- summon[ExprExtractor[T]].extract(evaluated).leftMap(EvaluationError.OperationFailure(op, args, _)).liftTo[F]
         } yield f(acc, extracted)
     }
 

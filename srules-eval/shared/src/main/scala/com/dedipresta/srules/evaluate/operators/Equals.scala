@@ -4,24 +4,25 @@ import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.MonadError
 import cats.syntax.all.*
 
 // equal 2 by 2 so true for empty list, single element list, and list with all elements equal
 object Equals:
 
-  def apply[Ctx](): Operator[Ctx, EvaluationError] =
-    new Operator[Ctx, EvaluationError]:
+  def apply[F[_], Ctx]()(using F: MonadError[F, EvaluationError]): Operator[F, Ctx, EvaluationError] =
+    new Operator[F, Ctx, EvaluationError]:
       def evaluate(
-          evaluator: ExprEvaluator[Ctx, EvaluationError],
+          evaluator: ExprEvaluator[F, Ctx, EvaluationError],
           op: String,
           args: List[Expr],
           ctx: RuleCtx[Ctx],
-      ): Either[EvaluationError, Expr] =
+      ): F[Expr] =
         args
           .traverse(evaluator.deepEvaluateFunctions(_, ctx))
-          .flatMap { evaluated =>
+          .map { evaluated =>
             evaluated.headOption match {
-              case Some(head) => Right(Expr.RBoolean(evaluated.forall(_ == head)))
-              case None       => Right(Expr.RBoolean(true)) // true by vacuous truth
+              case Some(head) => Expr.RBoolean(evaluated.forall(_ == head))
+              case None       => Expr.RBoolean(true) // true by vacuous truth
             }
           }

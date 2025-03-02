@@ -8,8 +8,9 @@ import munit.*
 
 final class ExistsSuite extends FunSuite {
 
-  given UserContextReader[Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
-  val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+  type ErrorOr[A] = Either[EvaluationError, A]
+  given UserContextReader[ErrorOr, Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
 
   test("ensure data arguments are pre-evaluated") {
     assertEquals(
@@ -31,7 +32,7 @@ final class ExistsSuite extends FunSuite {
 
   test("ensure arguments are pre-evaluated (var with function referencing index)") {
 
-    val indexFn = Expr.RFunction("var", "__index__".toExpr)
+    val indexFn = Expr.RFunction("var", "__INDEX__".toExpr)
     val f       = Expr.RFunction("==", List(Expr.RInt(2), indexFn))
 
     assertEquals(

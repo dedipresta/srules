@@ -21,44 +21,44 @@ Motivation:
 
 ## Sample Rules
 
-```scala 3
+```plaintext
 // basic arithmetic
 (7 + 3) * 2
 ```
 
-```scala 3
+```plaintext
 // access to context variables
 ($a / 2) * $b - 7
 ```
 
-```scala 3
+```plaintext
 // boolean operators
 $age > 18 && $country == "FR"
 ```
 
-```scala 3
+```plaintext
 // if-(elseif)*-else
-if($x>0, $value1, $y<=42, $value2, $default)
+if ($x > 0, $value1, $y <= 42, $value2, $default)
 ```
 
-```scala 3
+```plaintext
 // functions with variable number of arguments
 min($a, $b, $c) < 0
 ```
 
-```scala 3
+```plaintext
 // higher order functions
-map([1,2,3], value()*2)
+map([1, 2, 3], value() * 2)
 ```
 
-```scala 3
+```plaintext
 // acces to current value or index
-filter($list, index()%2 == 0)
+filter($list, index() % 2 == 0)
 ```
 
-```scala 3
+```plaintext
 // access to accumulator
-reduce([1,2,3], acc()+value())
+reduce([1, 2, 3], acc() + value())
 ```
 
 ## Installation
@@ -76,12 +76,14 @@ import com.dedipresta.srules.given // for show instance
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.operators.*
 
-// a given to read variables from your model, to make it easy we'll use a Map[String, Expr]
-// required by the `var` operator
-given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+// requires a MonadError instance, here we use Either, ExprEvaluatorImpl have instances for Try/ Future
+type ErrorOr[A] = Either[EvaluationError, A]
 
+// a given to read variables from your data model, to make it easy we'll use a Map[String, Expr]
+// required by the `var` operator, you may use UserContextReader.noContext if you don't need to read variables
+given UserContextReader[ErrorOr, Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
 // an evaluator with the operators you want to use
-val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
 
 val model: Map[String, Expr] = Map[String, Expr]("var1" -> SRules.parseOrThrow("-42"))
 
@@ -209,20 +211,22 @@ var("my2DArray[1][4]")
 
 There are some built-in variables that can be used in rules:
 
-- `value()` returns the current value in a higher order function (is `${__value__}`)
-- `index()` returns the current index in a higher order function (is `${__index__}`)
-- `acc()` returns the current accumulator in a higher order function (is `${__acc__}`)
-- `named("abc")` returns the value of a named variable (is `${__named__abc}`)
+- `value()` returns the current value in a higher order function (is `${__VALUE__}`)
+- `index()` returns the current index in a higher order function (is `${__INDEX__}`)
+- `acc()` returns the current accumulator in a higher order function (is `${__ACC__}`)
+- `named("abc")` returns the value of a named variable (is `${__NAMED__abc}`)
 
 ## Understanding Rules Evaluation
 
-To evaluate a rule, you will need an `ExprEvaluator[Ctx,E]` that is configured with your custom rules or uses the
+To evaluate a rule, you will need an `ExprEvaluator[F,Ctx,E]` that is configured with your custom rules or uses the
 default.
-It will evaluate the `Expr` with a given context (your data model) of type `Ctx` and return an `Expr` result or an error of type `E`.
+It will evaluate the `Expr` with a given context (your data model) of type `Ctx` and return an `Expr` result or an error
+of type `E`.
 
 ```scala 3
-given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
-val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+type ErrorOr[A] = Either[EvaluationError, A]
+given UserContextReader[ErrorOr, Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
 // evaluate the parsed expression with an empty context
 SRules.parse("abs(-42)").flatMap(evaluator.evaluateAll(_, Map.empty))
 // res: Right(RInt(42))
@@ -293,79 +297,81 @@ You may want to add your own operators or replace existing ones that do not fit 
 
 You'll need to implement `Operator` trait and more precisely its `evaluate` method.
 
-```scala
-trait Operator[Ctx, E] {
+```scala 3
+trait Operator[F[_], Ctx, E]:
   def evaluate(
-                evaluator: ExprEvaluator[Ctx, E], // reference to the evaluator so that we can evaluate sub-expressions
+                evaluator: ExprEvaluator[F, Ctx, E], // reference to the evaluator so that we can evaluate sub-expressions
                 op: String, // current operator name mostly provided for error messages
                 args: List[Expr], // arguments of the operator
                 ctx: RuleCtx[Ctx], // context of the evaluation (user context, named variables, current index or value)
-              ): Either[E, Expr]
-}
+              ): F[Expr] // result of the evaluation or an error
 ```
 
 1. If your operator wants an access to the user provided context, you should require a `UserContextReader[Ctx]` (see the
    dedicated part of the docs).
 1. Then you need to evaluate the arguments you will use in your operator (see `Evaluating Arguments`).
-1. Finally, you can provide your custom logic and return the result as an `Expr` or an error message in an `Either`.
+1. Finally, you can provide your custom logic and return the result as an `Expr` or an error message in a `F[_]`.
 
 Let's take an example with `isEmpty` that checks if a string or a list is empty.
 
-```scala
+```scala 3
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.MonadError
 import cats.syntax.all.*
 
-object IsEmpty {
-  // no direct access to the context so we keep it generic
-  def apply[Ctx](): Operator[Ctx, EvaluationError] =
-    new Operator[Ctx, EvaluationError] {
+object IsEmpty:
 
+  def apply[F[_], Ctx]()(using F: MonadError[F, EvaluationError]): Operator[F, Ctx, EvaluationError] =
+    new Operator[F, Ctx, EvaluationError]:
       def evaluate(
-                    evaluator: ExprEvaluator[Ctx, EvaluationError],
+                    evaluator: ExprEvaluator[F, Ctx, EvaluationError],
                     op: String,
                     args: List[Expr],
                     ctx: RuleCtx[Ctx],
-                  ): Either[EvaluationError, Expr] =
-        args // raw args of the operator (may reference variables, be another operator)
+                  ): F[Expr] =
+        args // raw args of the operator (may reference variables, or other operators)
           .traverse(evaluator.deepEvaluateFunctions(_, ctx)) // evaluation of the arguments before use
-          .flatMap(_.withExactly1(op)) // some helpers that check that the number of arguments is correct
+          .flatMap(_.withExactly1[F](op)) // some helpers that check that the number of arguments is correct
           .flatMap {
-            case Expr.RString(s) => Right(s.isEmpty.toExpr)
-            case Expr.RList(l) => Right(l.isEmpty.toExpr)
-            case other => EvaluationError.OperationFailure(op, args, FailureReason.InvalidArgumentType("String or List", other)).asLeft
+            case Expr.RString(s) => s.isEmpty.toExpr.pure[F] // check emptiness, transform to Expr and lift to F
+            case Expr.RList(l) => l.isEmpty.toExpr.pure[F]
+            case other => EvaluationError.OperationFailure(op, args, FailureReason.InvalidArgumentType("String or List", other)).raiseError[F, Expr]
           }
-    }
-}
 ```
 
 Now, with an operator that evaluates the arguments one by one. The boolean operator `OR`, `||`.
 
-```scala
-object Or {
+```scala 3
+import com.dedipresta.srules.*
+import com.dedipresta.srules.evaluate.*
+import com.dedipresta.srules.evaluate.syntax.*
 
-  def apply[Ctx](): Operator[Ctx, EvaluationError] =
-    new Operator[Ctx, EvaluationError] {
-      def evaluate(
-                    evaluator: ExprEvaluator[Ctx, EvaluationError],
-                    op: String,
-                    args: List[Expr],
-                    ctx: RuleCtx[Ctx],
-                  ): Either[EvaluationError, Expr] =
-        // no traverse since we want to short-circuit evaluation as soon as we find a true value
-        args
-          .foldLeft(false.asRight[EvaluationError])((acc, v) => // neutral element for OR is false
-            acc.flatMap {
-              case true => acc // bool condition is true, no need to evaluate the rest of the arguments
-              // evaluate before use ; it becomes the next acc value ; false || other = other)
-              case _ => evaluator.evaluatedToBoolean(op, v, ctx)
-            },
-          )
-          .map(_.toExpr) // convert the final boolean to a Boolean Expr
-    }
-}
+import cats.MonadError
+import cats.syntax.all.*
+
+object Or:
+
+def apply[F[_], Ctx]()(using F: MonadError[F, EvaluationError]): Operator[F, Ctx, EvaluationError] =
+  new Operator[F, Ctx, EvaluationError]:
+    def evaluate(
+                  evaluator: ExprEvaluator[F, Ctx, EvaluationError],
+                  op: String,
+                  args: List[Expr],
+                  ctx: RuleCtx[Ctx],
+                ): F[Expr] =
+      // no traverse since we want to short-circuit evaluation as soon as we find a true value
+      args
+        .foldLeft(false.pure[F])((acc, v) => // neutral element for OR is false
+          acc.flatMap {
+            case true => acc // bool condition is true, no need to evaluate the rest of the arguments
+            // evaluate before use ; it becomes the next acc value ; false || other = other)
+            case _ => evaluator.evaluatedToBoolean(op, v, ctx)
+          },
+        )
+        .map(_.toExpr)
 ```
 
 ### Evaluating Arguments
@@ -420,10 +426,9 @@ To allow an operator to access the user context you should give it a `UserContex
 you may use this instance to read variables. `Ctx` is the type of your data model.
 Only the `var` operator is accessing the user context by default.
 
-```scala
-trait UserContextReader[Ctx] {
-  def read(ctx: Ctx, name: String, defaultValue: Option[Expr]): Either[EvaluationError, Expr]
-}
+```scala 3
+trait UserContextReader[F[_], Ctx]:
+  def read(ctx: Ctx, name: String, defaultValue: Option[Expr]): F[Expr]
 ```
 
 It means that you have to provide a way to read a variable, by name, from your data model and return an `Expr` so it can
@@ -435,20 +440,21 @@ returning `Expr.RNull` or an error.
 As an example, let's consider an implementation for a context that is a `Map[String, Expr]` (available with
 `UserContextReader.forMapExpr`).
 
-```scala
-def forMapExpr(notFoundToNull: Boolean): UserContextReader[Map[String, Expr]] = {
-  new UserContextReader[Map[String, Expr]] {
-    def read(ctx: Map[String, Expr], name: String, defaultValue: Option[Expr]): Either[EvaluationError, Expr] =
+```scala 3
+def forMapExpr[F[_]](notFoundToNull: Boolean)(using F: MonadError[F, EvaluationError]): UserContextReader[F, Map[String, Expr]] =
+  new UserContextReader[F, Map[String, Expr]]:
+    def read(ctx: Map[String, Expr], name: String, defaultValue: Option[Expr]): F[Expr] =
       ctx.get(name) match {
-        case Some(value) => value.asRight
-        case None =>
-          defaultValue match {
-            case Some(v) => v.asRight
-            case None => if (notFoundToNull) Expr.RNull.asRight else Left(EvaluationError.VariableNotFound(name))
-          }
+        case Some(value) => value.pure[F]
+        case None => handleNotFound(name, defaultValue, notFoundToNull)
       }
-  }
-}
+
+    private def handleNotFound[F[_]](name: String, defaultValue: Option[Expr], notFoundToNull: Boolean)(using
+                                                                                                        F: MonadError[F, EvaluationError],
+    ): F[Expr] =
+      defaultValue match
+        case Some(v) => v.pure[F]
+        case None => if (notFoundToNull) Expr.RNull.pure[F] else F.raiseError(FailureReason.VariableNotFound(name).opError("readUserContext", Nil))
 ```
 
 `WARNING` you may not directly use a `Map[String, Any]` when using the `scala.js` runtime since pattern matching on

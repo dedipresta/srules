@@ -4,12 +4,15 @@ import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.operators.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.syntax.all.*
+
 import munit.*
 
 final class ExprEvaluatorJvmSuite extends FunSuite {
 
-  given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
-  val evaluator                              = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+  type ErrorOr[A] = Either[EvaluationError, A]
+  given UserContextReader[ErrorOr, Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
 
   test("parse and evaluate variable expression (double)") {
     assertEquals(

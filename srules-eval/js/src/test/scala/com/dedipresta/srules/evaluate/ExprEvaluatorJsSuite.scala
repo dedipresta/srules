@@ -8,8 +8,9 @@ import munit.*
 
 final class ExprEvaluatorJsSuite extends FunSuite {
 
-  given UserContextReader[Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
-  val evaluator                              = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+  type ErrorOr[A] = Either[EvaluationError, A]
+  given UserContextReader[ErrorOr, Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
 
   // cast from Any have pitfalls on scala.js runtime
 

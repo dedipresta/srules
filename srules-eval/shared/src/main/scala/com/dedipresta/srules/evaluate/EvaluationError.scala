@@ -5,6 +5,8 @@ import com.dedipresta.srules.given
 
 import cats.syntax.all.*
 
+import scala.util.control.NoStackTrace
+
 sealed trait EvaluationError:
   def message: String
 object EvaluationError:
@@ -12,6 +14,11 @@ object EvaluationError:
     def message: String = s"Operator not found: op=$op, expr=${expr.show}"
   case class OperationFailure(op: String, args: List[Expr], reason: FailureReason) extends EvaluationError:
     def message: String = s"Operation failure: op=$op, args=[${args.map(_.show).mkString(",")}], reason=(${reason.message})"
+
+  case class EvaluationException(error: EvaluationError) extends Exception(error.message)
+  extension (err: EvaluationError) {
+    def toException: EvaluationException = EvaluationException(err)
+  }
 
 trait FailureReason:
   def message: String

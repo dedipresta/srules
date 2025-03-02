@@ -4,26 +4,27 @@ import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.MonadError
 import cats.syntax.all.*
 
 object Exists:
 
-  def apply[Ctx](): Operator[Ctx, EvaluationError] =
-    new Operator[Ctx, EvaluationError]:
+  def apply[F[_], Ctx]()(using F: MonadError[F, EvaluationError]): Operator[F, Ctx, EvaluationError] =
+    new Operator[F, Ctx, EvaluationError]:
       def evaluate(
-          evaluator: ExprEvaluator[Ctx, EvaluationError],
+          evaluator: ExprEvaluator[F, Ctx, EvaluationError],
           op: String,
           args: List[Expr],
           ctx: RuleCtx[Ctx],
-      ): Either[EvaluationError, Expr] =
+      ): F[Expr] =
         args
-          .withExactly2(op)
+          .withExactly2[F](op)
           .flatMap {
             case (expr, fn: Expr.RFunction) =>
               for {
                 data <- evaluator.evaluatedToList(op, expr, ctx)
                 res  <- data.zipWithIndex
-                          .foldLeft[Either[EvaluationError, Boolean]](false.asRight) { case (acc, (expr, index)) =>
+                          .foldLeft[F[Boolean]](false.pure[F]) { case (acc, (expr, index)) =>
                             acc.flatMap { (found: Boolean) =>
                               if (found)
                                 acc
@@ -36,5 +37,5 @@ object Exists:
                           }
               } yield res.toExpr
 
-            case (_, other) => Left(FailureReason.InvalidArgumentType("Function", other)).opError(op, args)
+            case (_, other) => F.raiseError(FailureReason.InvalidArgumentType("Function", other).opError(op, args))
           }

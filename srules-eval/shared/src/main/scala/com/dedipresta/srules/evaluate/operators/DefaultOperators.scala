@@ -1,33 +1,36 @@
 package com.dedipresta.srules.evaluate.operators
 
-import com.dedipresta.srules.evaluate.EvaluationError
-import com.dedipresta.srules.evaluate.Operator
-import com.dedipresta.srules.evaluate.UserContextReader
+import com.dedipresta.srules.evaluate.*
+
+import cats.MonadError
 
 object DefaultOperators:
 
-  def all[Ctx: UserContextReader]: Map[String, Operator[Ctx, EvaluationError]] = {
-    val add       = Add[Ctx]()
-    val sub       = Subtract[Ctx]()
-    val div       = Divide[Ctx]()
-    val mod       = Mod[Ctx]()
-    val mul       = Multiply[Ctx]()
-    val and       = And[Ctx]()
-    val or        = Or[Ctx]()
-    val not       = Not[Ctx]()
-    val gt        = Gt[Ctx]()
-    val gte       = Gte[Ctx]()
-    val lt        = Lt[Ctx]()
-    val lte       = Lte[Ctx]()
-    val eq        = Equals[Ctx]()
-    val ne        = NotEquals[Ctx]()
-    val toLong    = ToLong[Ctx]()
-    val toDouble  = ToDouble[Ctx]()
-    val toFloat   = ToFloat[Ctx]()
-    val toInt     = ToInt[Ctx]()
-    val toString  = ToString[Ctx]()
-    val toBoolean = ToBoolean[Ctx]()
-    val pow       = Pow[Ctx]()
+  def all[F[_], Ctx](using
+      monadError: MonadError[F, EvaluationError],
+      ctxReader: UserContextReader[F, Ctx],
+  ): Map[String, Operator[F, Ctx, EvaluationError]] = {
+    val add       = Add[F, Ctx]()
+    val sub       = Subtract[F, Ctx]()
+    val div       = Divide[F, Ctx]()
+    val mod       = Mod[F, Ctx]()
+    val mul       = Multiply[F, Ctx]()
+    val and       = And[F, Ctx]()
+    val or        = Or[F, Ctx]()
+    val not       = Not[F, Ctx]()
+    val gt        = Gt[F, Ctx]()
+    val gte       = Gte[F, Ctx]()
+    val lt        = Lt[F, Ctx]()
+    val lte       = Lte[F, Ctx]()
+    val eq        = Equals[F, Ctx]()
+    val ne        = NotEquals[F, Ctx]()
+    val toLong    = ToLong[F, Ctx]()
+    val toDouble  = ToDouble[F, Ctx]()
+    val toFloat   = ToFloat[F, Ctx]()
+    val toInt     = ToInt[F, Ctx]()
+    val toString  = ToString[F, Ctx]()
+    val toBoolean = ToBoolean[F, Ctx]()
+    val pow       = Pow[F, Ctx]()
 
     Map(
       "+"         -> add,
@@ -45,47 +48,47 @@ object DefaultOperators:
       "!="        -> ne,
       "!"         -> not,
       "^"         -> pow,
-      "abs"       -> Abs[Ctx](),
-      "acc"       -> Accumulator[Ctx](),
+      "abs"       -> Abs[F, Ctx](),
+      "acc"       -> Accumulator[F, Ctx](),
       "add"       -> add,
       "and"       -> and,
-      "atIndex"   -> AtIndex[Ctx](),
-      "ceil"      -> Ceil[Ctx](),
-      "contains"  -> Contains[Ctx](),
+      "atIndex"   -> AtIndex[F, Ctx](),
+      "ceil"      -> Ceil[F, Ctx](),
+      "contains"  -> Contains[F, Ctx](),
       "div"       -> div,
-      "eval"      -> Eval[Ctx](),
-      "exists"    -> Exists[Ctx](),
+      "eval"      -> Eval[F, Ctx](),
+      "exists"    -> Exists[F, Ctx](),
       "eq"        -> eq,
-      "fail"      -> Fail[Ctx](),
-      "filter"    -> Filter[Ctx](),
-      "find"      -> Find[Ctx](),
-      "floor"     -> Floor[Ctx](),
-      "forAll"    -> ForAll[Ctx](),
+      "fail"      -> Fail[F, Ctx](),
+      "filter"    -> Filter[F, Ctx](),
+      "find"      -> Find[F, Ctx](),
+      "floor"     -> Floor[F, Ctx](),
+      "forAll"    -> ForAll[F, Ctx](),
       "gt"        -> gt,
       "gte"       -> gte,
-      "if"        -> If[Ctx](),
-      "index"     -> Index[Ctx](),
-      "indexOf"   -> IndexOf[Ctx](),
-      "isEmpty"   -> IsEmpty[Ctx](),
-      "isNull"    -> IsNull[Ctx](),
-      "lazyIf"    -> LazyIf[Ctx](),
+      "if"        -> If[F, Ctx](),
+      "index"     -> Index[F, Ctx](),
+      "indexOf"   -> IndexOf[F, Ctx](),
+      "isEmpty"   -> IsEmpty[F, Ctx](),
+      "isNull"    -> IsNull[F, Ctx](),
+      "lazyIf"    -> LazyIf[F, Ctx](),
       "lt"        -> lt,
       "lte"       -> lte,
-      "map"       -> MapFn[Ctx](),
-      "max"       -> Max[Ctx](),
+      "map"       -> MapFn[F, Ctx](),
+      "max"       -> Max[F, Ctx](),
       "mod"       -> mod,
-      "min"       -> Min[Ctx](),
+      "min"       -> Min[F, Ctx](),
       "mul"       -> mul,
-      "named"     -> Named[Ctx](),
+      "named"     -> Named[F, Ctx](),
       "ne"        -> ne,
-      "nonEmpty"  -> NonEmpty[Ctx](),
+      "nonEmpty"  -> NonEmpty[F, Ctx](),
       "not"       -> not,
-      "notNull"   -> NotNull[Ctx](),
+      "notNull"   -> NotNull[F, Ctx](),
       "or"        -> or,
       "pow"       -> pow,
-      "reduce"    -> Reduce[Ctx](),
-      "round"     -> Round[Ctx](),
-      "size"      -> Size[Ctx](),
+      "reduce"    -> Reduce[F, Ctx](),
+      "round"     -> Round[F, Ctx](),
+      "size"      -> Size[F, Ctx](),
       "sub"       -> sub,
       "toBoolean" -> toBoolean,
       "bool"      -> toBoolean,
@@ -99,7 +102,7 @@ object DefaultOperators:
       "long"      -> toLong,
       "toString"  -> toString,
       "string"    -> toString,
-      "value"     -> Value[Ctx](),
-      "var"       -> Var[Ctx](),
+      "value"     -> Value[F, Ctx](),
+      "var"       -> Var[F, Ctx](),
     )
   }

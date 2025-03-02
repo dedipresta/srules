@@ -4,23 +4,24 @@ import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.syntax.*
 
+import cats.MonadError
 import cats.syntax.all.*
 
 object NonEmpty:
 
-  def apply[Ctx](): Operator[Ctx, EvaluationError] =
-    new Operator[Ctx, EvaluationError]:
+  def apply[F[_], Ctx]()(using F: MonadError[F, EvaluationError]): Operator[F, Ctx, EvaluationError] =
+    new Operator[F, Ctx, EvaluationError]:
       def evaluate(
-          evaluator: ExprEvaluator[Ctx, EvaluationError],
+          evaluator: ExprEvaluator[F, Ctx, EvaluationError],
           op: String,
           args: List[Expr],
           ctx: RuleCtx[Ctx],
-      ): Either[EvaluationError, Expr] =
+      ): F[Expr] =
         args
           .traverse(evaluator.deepEvaluateFunctions(_, ctx))
-          .flatMap(_.withExactly1(op))
+          .flatMap(_.withExactly1[F](op))
           .flatMap {
-            case Expr.RString(s) => Right(s.nonEmpty.toExpr)
-            case Expr.RList(l)   => Right(l.nonEmpty.toExpr)
-            case other           => EvaluationError.OperationFailure(op, args, FailureReason.InvalidArgumentType("String or List", other)).asLeft
+            case Expr.RString(s) => s.nonEmpty.toExpr.pure[F]
+            case Expr.RList(l)   => l.nonEmpty.toExpr.pure[F]
+            case other           => F.raiseError(EvaluationError.OperationFailure(op, args, FailureReason.InvalidArgumentType("String or List", other)))
           }

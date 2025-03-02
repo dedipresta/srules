@@ -7,8 +7,9 @@ import munit.*
 
 final class FloorSuite extends FunSuite {
 
-  given UserContextReader[Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
-  val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+  type ErrorOr[A] = Either[EvaluationError, A]
+  given UserContextReader[ErrorOr, Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
 
   test("parse and evaluate floor function (int)") {
     assertEquals(

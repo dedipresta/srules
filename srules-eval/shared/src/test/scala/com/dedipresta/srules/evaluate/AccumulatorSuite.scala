@@ -7,13 +7,14 @@ import munit.*
 
 final class AccumulatorSuite extends FunSuite {
 
-  given UserContextReader[Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
-  val evaluator: ExprEvaluatorImpl[Map[String, Expr]] = new ExprEvaluatorImpl[Map[String, Expr]](DefaultOperators.all)
+  type ErrorOr[A] = Either[EvaluationError, A]
+  given UserContextReader[ErrorOr, Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
+  val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
 
   test("parse and evaluate accumulator expression") {
     assertEquals(
       SRules.parse("""acc()""").flatMap(evaluator.evaluate(_, Map.empty)),
-      Left(EvaluationError.OperationFailure("var", List(Expr.RString("__acc__")), FailureReason.VariableNotFound("__acc__"))),
+      Left(EvaluationError.OperationFailure("var", List(Expr.RString("__ACC__")), FailureReason.VariableNotFound("__ACC__"))),
     )
   }
 }
