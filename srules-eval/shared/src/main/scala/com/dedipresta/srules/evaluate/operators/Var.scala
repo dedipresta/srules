@@ -39,7 +39,7 @@ object Var:
                   ctxReader
                     .read(ctx.user, other, defaultValue)
                     // recover error to provide better context
-                    .recoverWith { case EvaluationError.OperationFailure(op, args, e) => F.raiseError(e.opError(op, args)) }
+                    .recoverWith { case EvaluationError.OperationFailure(_, _, e) => F.raiseError(e.opError(op, args)) }
               }
             case (other, _)                         => F.raiseError(FailureReason.InvalidArgumentType("String", other).opError(op, args))
           }

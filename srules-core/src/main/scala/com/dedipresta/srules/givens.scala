@@ -21,14 +21,19 @@ private val infixOperators =
 
 given Show[Expr] = new Show[Expr] {
 
-  private def renderFloat(f: Float): String   =
+  private def renderFloat(f: Float): String =
     val s = f.toString
     if s.contains('.') then s"${s}f"
+    // $COVERAGE-OFF$ scala.js
     else s"$s.0f"
+    // $COVERAGE-ON$
+
   private def renderDouble(d: Double): String =
     val s = d.toString
     if s.contains('.') then s"${s}d"
+    // $COVERAGE-OFF$ scala.js
     else s"$s.0d"
+    // $COVERAGE-ON$
 
   def show(e: Expr): String =
     e match

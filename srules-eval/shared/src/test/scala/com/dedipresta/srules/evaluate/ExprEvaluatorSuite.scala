@@ -137,4 +137,11 @@ final class ExprEvaluatorSuite extends FunSuite {
     )
   }
 
+  test("return an error if operator is not found") {
+    assertEquals(
+      SRules.parse("notFound(1)").flatMap(evaluator.evaluate(_, Map.empty)),
+      Left(EvaluationError.OperatorNotFound("notFound", Expr.RFunction("notFound", List(Expr.RInt(1))))),
+    )
+  }
+
 }

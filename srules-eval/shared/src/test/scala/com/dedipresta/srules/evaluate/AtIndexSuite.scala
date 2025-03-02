@@ -70,4 +70,11 @@ final class AtIndexSuite extends FunSuite {
     )
   }
 
+  test("return an error if first argument is neither a list nor a string") {
+    assertEquals(
+      SRules.parse("""atIndex(42, 1)""").flatMap(evaluator.evaluate(_, Map.empty)).isLeft,
+      true,
+    )
+  }
+
 }

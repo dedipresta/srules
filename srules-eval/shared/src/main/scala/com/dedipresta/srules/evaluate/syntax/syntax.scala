@@ -51,62 +51,6 @@ object ExprExtractor:
     case expr          => Left(FailureReason.InvalidArgumentType("List", expr))
   }
 
-  //   given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Int] =
-//    new ExprExtractor[F, Int]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RInt(i) => i.pure[F]
-//          case _            => FailureReason.InvalidArgumentType("Int", expr).raiseError[F, Int]
-//
-//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Long] =
-//    new ExprExtractor[F, Long]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RLong(i) => i.pure[F]
-//          case _             => FailureReason.InvalidArgumentType("Long", expr).raiseError[F, Long]
-//
-//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Double] =
-//    new ExprExtractor[F, Double]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RDouble(i) => i.pure[F]
-//          case _               => FailureReason.InvalidArgumentType("Double", expr).raiseError[F, Double]
-//
-//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Float] =
-//    new ExprExtractor[F, Float]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RFloat(i) => i.pure[F]
-//          case _              => FailureReason.InvalidArgumentType("Float", expr).raiseError[F, Float]
-//
-//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, String] =
-//    new ExprExtractor[F, String]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RString(i) => i.pure[F]
-//          case _               => FailureReason.InvalidArgumentType("String", expr).raiseError[F, String]
-//
-//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, (String, List[Expr])] =
-//    new ExprExtractor[F, (String, List[Expr])]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RFunction(name, args) => (name, args).pure[F]
-//          case _                          => FailureReason.InvalidArgumentType("Function", expr).raiseError[F, (String, List[Expr])]
-//
-//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, Boolean] =
-//    new ExprExtractor[F, Boolean]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RBoolean(i) => i.pure[F]
-//          case _                => FailureReason.InvalidArgumentType("Boolean", expr).raiseError[F, Boolean]
-//
-//  given [F[_]](using MonadError[F, FailureReason]): ExprExtractor[F, List[Expr]] =
-//    new ExprExtractor[F, List[Expr]]:
-//      def extract(expr: Expr) =
-//        expr match
-//          case Expr.RList(i) => i.pure[F]
-//          case _             => FailureReason.InvalidArgumentType("List", expr).raiseError[F, List[Expr]]
-
 extension (args: List[Expr]) {
 
   def atLeast[F[_]](n: Int, op: String)(using F: MonadError[F, EvaluationError]): F[Unit] =
@@ -119,17 +63,17 @@ extension (args: List[Expr]) {
   def withExactly0[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[Unit]               =
     args.exactly(0, op)
   def withExactly1[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[Expr]               =
-    args.exactly(1, op).as(args.head)
+    args.exactly(1, op).map(_ => args.head)
   def withExactly2[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Expr)]       =
-    args.exactly(2, op).as(args.head, args(1))
+    args.exactly(2, op).map(_ => (args.head, args(1)))
   def withExactly3[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Expr, Expr)] =
-    args.exactly(3, op).as(args.head, args(1), args(2))
+    args.exactly(3, op).map(_ => (args.head, args(1), args(2)))
 
   def withAtLeast1[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, List[Expr])] =
-    args.atLeast(1, op).as(args.head, args.tail)
+    args.atLeast(1, op).map(_ => (args.head, args.drop(1)))
 
   def withAtLeast2[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[(Expr, Expr, List[Expr])] =
-    args.atLeast(2, op).as(args.head, args(1), args.drop(2))
+    args.atLeast(2, op).map(_ => (args.head, args(1), args.drop(2)))
 
   def withOptional[F[_]](op: String)(using F: MonadError[F, EvaluationError]): F[Option[Expr]] =
     args match {

@@ -40,9 +40,6 @@ final class ExprEvaluatorImpl[F[_], Ctx](
       case _                        => expr.pure[F] // already a value
 
 object ExprEvaluatorImpl:
-  def withOperators[F[_], Ctx](
-      operators: Map[String, Operator[F, Ctx, EvaluationError]],
-  )(using F: MonadError[F, EvaluationError]): ExprEvaluatorImpl[F, Ctx] = new ExprEvaluatorImpl(operators)
 
   given (using ec: ExecutionContext): MonadError[Future, EvaluationError] =
     new MonadError[Future, EvaluationError] {

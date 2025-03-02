@@ -38,12 +38,15 @@ final class ParserSuite extends FunSuite {
   }
 
   test("parse a double value") {
+    assertEquals(Parser.doubleValue.parseAll("123d"), Right(RDouble(123d)))
+    assertEquals(Parser.doubleValue.parseAll("123.456d"), Right(RDouble(123.456d)))
     assertEquals(Parser.doubleValue.parseAll("123.456"), Right(RDouble(123.456)))
     assertEquals(Parser.doubleValue.parseAll("+123.456"), Right(RDouble(123.456)))
     assertEquals(Parser.doubleValue.parseAll("-123.456"), Right(RDouble(-123.456)))
   }
 
   test("parse a float value") {
+    assertEquals(Parser.floatValue.parseAll("123f"), Right(RFloat(123f)))
     assertEquals(Parser.floatValue.parseAll("123.456f"), Right(RFloat(123.456f)))
     assertEquals(Parser.floatValue.parseAll("+123.456f"), Right(RFloat(123.456f)))
     assertEquals(Parser.floatValue.parseAll("-123.456f"), Right(RFloat(-123.456f)))

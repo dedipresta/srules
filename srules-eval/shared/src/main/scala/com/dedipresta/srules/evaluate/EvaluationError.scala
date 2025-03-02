@@ -5,8 +5,6 @@ import com.dedipresta.srules.given
 
 import cats.syntax.all.*
 
-import scala.util.control.NoStackTrace
-
 sealed trait EvaluationError:
   def message: String
 object EvaluationError:

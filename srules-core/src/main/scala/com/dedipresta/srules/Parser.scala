@@ -20,12 +20,23 @@ private[srules] object Parser {
   val parseSignedDigits: CatsParser[String]   = (charIn("+-").?.string.with1 ~ parseUnsignedDigits).map(_ + _)
   val parseInteger: CatsParser[Int]           = parseSignedDigits.map(_.toInt)
   val parseLong: CatsParser[Long]             = (parseSignedDigits ~ charIn("lL")).map(_._1.toLong)
-  val parseFloatingPoint: CatsParser[String]  = (parseSignedDigits ~ char('.') ~ parseUnsignedDigits).map { case ((a, _), b) => s"$a.$b" }
-  val parseDouble: CatsParser[Double]         = (parseFloatingPoint <* charIn("dD").?).map(_.toDouble)
+
+  // floating points may or may not have decimal part
+  // if no decimal part, a f or F is needed for float, d or D for double
+  // if decimal part, a f or F is needed for float, d or D is optional for double
+  val parseDecimalPart: CatsParser[String]   = (char('.') ~ parseUnsignedDigits).string
+  val parseFloatingPoint: CatsParser[String] = (parseSignedDigits ~ parseDecimalPart.?).map((a, b) => a + b.getOrElse(""))
+
+  // float
   val parseFloat: CatsParser[Float]           = (parseFloatingPoint <* charIn("fF")).map(_.toFloat)
-  val stringChar: CatsParser[Char]            = CatsParser.oneOf(List((char('\\') ~ char('"')).as('"'), charWhere(_ != '"')))
-  val innerQuotes: Parser0[String]            = stringChar.rep0.string
-  val parseQuotedString: CatsParser[String]   = dquote *> innerQuotes <* dquote
+  // double
+  val parseDoubleNoHint: CatsParser[Double]   = (parseSignedDigits ~ parseDecimalPart).string.map(_.toDouble) // no final d or D
+  val parseDoubleWithHint: CatsParser[Double] = (parseFloatingPoint <* charIn("dD")).map(_.toDouble)          // final d or D
+  val parseDouble: CatsParser[Double]         = parseDoubleWithHint.backtrack | parseDoubleNoHint
+
+  val stringChar: CatsParser[Char]          = CatsParser.oneOf(List((char('\\') ~ char('"')).as('"'), charWhere(_ != '"')))
+  val innerQuotes: Parser0[String]          = stringChar.rep0.string
+  val parseQuotedString: CatsParser[String] = dquote *> innerQuotes <* dquote
 
   // parse variable names format: $varName_1 or ${can.be.dotted.var.name_1}
   val varFirstChar: CatsParser[String]      = (alpha | charIn("_")).string

@@ -6,6 +6,9 @@ sealed trait RuleCtx[Ctx]:
   def user: Ctx
   def named: Map[String, Expr]
 object RuleCtx:
+
+  def empty[Ctx](ctx: Ctx): DefaultContext[Ctx] = DefaultContext(ctx, Map.empty)
+
   case class DefaultContext[Ctx](user: Ctx, named: Map[String, Expr])                                        extends RuleCtx[Ctx]
   case class WithIndexedValue[Ctx](user: Ctx, named: Map[String, Expr], index: Int, current: Expr)           extends RuleCtx[Ctx]
   case class WithAccumulator[Ctx](user: Ctx, named: Map[String, Expr], index: Int, current: Expr, acc: Expr) extends RuleCtx[Ctx]

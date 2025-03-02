@@ -75,6 +75,7 @@ lazy val `srules-core` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossT
       catsParse.value,
     ),
   )
+  .jsSettings(coverageEnabled := false)
 
 lazy val `srules-eval` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full) in file("srules-eval"))
   .settings(
@@ -85,3 +86,4 @@ lazy val `srules-eval` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossT
     ),
   )
   .dependsOn(`srules-core`)
+  .jsSettings(coverageEnabled := false)

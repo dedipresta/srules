@@ -74,4 +74,18 @@ final class LazyIfSuite extends FunSuite {
     )
   }
 
+  test("return an error if less than 2 arguments") {
+    assertEquals(
+      SRules.parse("lazyIf(true)").flatMap(evaluator.evaluate(_, Map.empty)).isLeft,
+      true,
+    )
+  }
+
+  test("return an error if arguments count has not the 3+2n shape") {
+    assertEquals(
+      SRules.parse("lazyIf(false, 1, false, 3)").flatMap(evaluator.evaluate(_, Map.empty)).isLeft,
+      true,
+    )
+  }
+
 }
