@@ -35,12 +35,13 @@ final class ReduceSuite extends FunSuite {
     assertEquals(
       SRules.parse("reduce([], value()+acc())").flatMap(evaluator.evaluate(_, Map.empty)),
       Left(
-        EvaluationError.OperatorRequiresNonEmptyList(
+        EvaluationError.OperationFailure(
           "reduce",
           List(
             Expr.RList(Nil),
             Expr.RFunction("+", List(Expr.RFunction("value"), Expr.RFunction("acc"))),
           ),
+          FailureReason.InvalidArgumentValue("Non-empty list", Expr.RList(Nil)),
         ),
       ),
     )

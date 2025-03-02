@@ -20,7 +20,7 @@ object LazyIf:
         // shape of the arguments is: [condition, valueIfTrue, (condition, valueIfTrue)*, valueIfFalse]
         args match {
           case cond :: value :: tail => handleConditionAndValue(evaluator, op, cond, value, tail, ctx)
-          case _                     => Left(EvaluationError.ZZZZZ(op))
+          case _                     => Left(FailureReason.InvalidArgumentsCountPattern("Arguments count should have shape 3+2n", args.length)).opError(op, args)
         }
 
       private def handleConditionAndValue(
@@ -45,5 +45,5 @@ object LazyIf:
         args match {
           case h :: s :: subTail => handleConditionAndValue(evaluator, op, h, s, subTail, ctx)
           case last :: Nil       => last.asRight
-          case _                 => Left(EvaluationError.ZZZZZ(op))
+          case _                 => Left(FailureReason.InvalidArgumentsCountPattern("Arguments count should have shape 3+2n", args.length)).opError(op, args)
         }

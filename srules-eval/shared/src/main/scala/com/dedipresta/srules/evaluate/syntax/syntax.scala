@@ -2,6 +2,7 @@ package com.dedipresta.srules.evaluate.syntax
 
 import com.dedipresta.srules.Expr
 import com.dedipresta.srules.evaluate.*
+import com.dedipresta.srules.evaluate.FailureReason.InvalidArgumentsCount
 
 import cats.*
 import cats.syntax.all.*
@@ -53,11 +54,11 @@ object ExprExtractor:
 extension (args: List[Expr]) {
 
   def atLeast(n: Int, op: String): Either[EvaluationError, Unit] =
-    if args.length < n then Left(EvaluationError.AtLeast(op, n, args)) else Right(())
+    if args.length < n then Left(InvalidArgumentsCount.atLeast(n, args.length).opError(op, args)) else Right(())
   def atMost(n: Int, op: String): Either[EvaluationError, Unit]  =
-    if args.length > n then Left(EvaluationError.AtMost(op, n, args)) else Right(())
+    if args.length > n then Left(InvalidArgumentsCount.atMost(n, args.length).opError(op, args)) else Right(())
   def exactly(n: Int, op: String): Either[EvaluationError, Unit] =
-    if args.length != n then Left(EvaluationError.Exactly(op, n, args)) else Right(())
+    if args.length != n then Left(InvalidArgumentsCount.exactly(n, args.length).opError(op, args)) else Right(())
 
   def withExactly0(op: String): Either[EvaluationError, Unit]               =
     args.exactly(0, op)
@@ -78,20 +79,20 @@ extension (args: List[Expr]) {
     args match {
       case Nil      => None.asRight
       case h :: Nil => Some(h).asRight
-      case _        => EvaluationError.AtMost(op, 1, args).asLeft
+      case _        => InvalidArgumentsCount.atMost(1, args.length).opError(op, args).asLeft
     }
 
   def with1Or2(op: String): Either[EvaluationError, (Expr, Option[Expr])]       =
     args match {
       case h :: Nil      => (h, None).asRight
       case h :: t :: Nil => (h, Some(t)).asRight
-      case _             => EvaluationError.AtLeast(op, 1, args).asLeft
+      case _             => InvalidArgumentsCount.atMost(2, args.length).opError(op, args).asLeft
     }
   def with2Or3(op: String): Either[EvaluationError, (Expr, Expr, Option[Expr])] =
     args match {
       case h :: t :: Nil      => (h, t, None).asRight
       case h :: t :: o :: Nil => (h, t, Some(o)).asRight
-      case _                  => EvaluationError.AtLeast(op, 2, args).asLeft
+      case _                  => InvalidArgumentsCount.atMost(3, args.length).opError(op, args).asLeft
     }
 
 }

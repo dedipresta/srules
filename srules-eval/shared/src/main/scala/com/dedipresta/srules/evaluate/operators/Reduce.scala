@@ -21,7 +21,7 @@ object Reduce:
               for {
                 ls   <- evaluator.evaluatedToList(op, expr, ctx)
                 data <- ls.traverse(evaluator.deepEvaluateFunctions(_, ctx))
-                head <- data.headOption.toRight(EvaluationError.OperatorRequiresNonEmptyList(op, args))
+                head <- data.headOption.toRight(FailureReason.InvalidArgumentValue("Non-empty list", data.toExpr)).opError(op, args)
                 acc   = ctx.withAccumulator(index = 0, current = head, acc = head) // not correct but temporary
                 res  <- data.tail.zipWithIndex
                           .foldLeft(acc.asRight[EvaluationError]) { case (eitherAcc, (expr, index)) =>

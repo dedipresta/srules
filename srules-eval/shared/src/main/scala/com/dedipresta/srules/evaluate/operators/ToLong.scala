@@ -22,11 +22,11 @@ object ToLong:
 
       private def toLong(op: String, expr: Expr): Either[FailureReason, Long] =
         expr match {
-          case Expr.RString(s)  => s.toLongOption.toRight(FailureReason.InvalidArgumentValue(expr))
+          case Expr.RString(s)  => s.toLongOption.toRight(FailureReason.InvalidArgumentValue("Cannot be cast to Long", expr))
           case Expr.RInt(i)     => Right(i.toLong)
           case Expr.RBoolean(b) => Right(if (b) 1L else 0L)
           case Expr.RLong(l)    => Right(l)
           case Expr.RDouble(d)  => Right(d.toLong)
           case Expr.RFloat(f)   => Right(f.toLong)
-          case _                => Left(FailureReason.InvalidArgumentType("Convertible to Long", expr))
+          case _                => Left(FailureReason.InvalidArgumentType("Cannot be cast to Long", expr))
         }

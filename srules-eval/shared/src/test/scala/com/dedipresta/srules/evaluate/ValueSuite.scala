@@ -13,7 +13,7 @@ final class ValueSuite extends FunSuite {
   test("parse and evaluate named expression") {
     assertEquals(
       SRules.parse("""value()""").flatMap(evaluator.evaluate(_, Map.empty)),
-      Left(EvaluationError.VariableNotFound("__value__")),
+      Left(EvaluationError.OperationFailure("var", List(Expr.RString("__value__")), FailureReason.VariableNotFound("__value__"))),
     )
   }
 

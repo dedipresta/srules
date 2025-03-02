@@ -46,7 +46,7 @@ final class ExprEvaluatorImpl[Ctx](
       case Expr.RFunction(op, args) =>             // operator found, so evaluate
         operators.get(op) match
           case Some(operator) => operator.evaluate(this, op, args, ctx)
-          case None           => Left(EvaluationError.OperatorNotFound(op))
+          case None           => Left(EvaluationError.OperatorNotFound(op, expr))
       case _                        => Right(expr) // already a value
 
 object ExprEvaluatorImpl:

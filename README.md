@@ -209,10 +209,10 @@ var("my2DArray[1][4]")
 
 There are some built-in variables that can be used in rules:
 
-- `value()` returns the current value in a higher order function (is `${"__value__"}`)
-- `index()` returns the current index in a higher order function (is `${"__index__"}`)
-- `acc()` returns the current accumulator in a higher order function (is `${"__acc__"}`)
-- `named("abc")` returns the value of a named variable (is `${"__named__abc"}`)
+- `value()` returns the current value in a higher order function (is `${__value__}`)
+- `index()` returns the current index in a higher order function (is `${__index__}`)
+- `acc()` returns the current accumulator in a higher order function (is `${__acc__}`)
+- `named("abc")` returns the value of a named variable (is `${__named__abc}`)
 
 ## Understanding Rules Evaluation
 

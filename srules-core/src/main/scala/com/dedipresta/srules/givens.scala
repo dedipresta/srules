@@ -1,7 +1,6 @@
 package com.dedipresta.srules
 
 import cats.Show
-// TODO make it configurable (add d to double, etc
 
 private val infixOperators =
   Set(

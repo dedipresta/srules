@@ -23,11 +23,11 @@ object ToBoolean:
 
       private def toBoolean(op: String, expr: Expr): Either[FailureReason, Boolean] =
         expr match {
-          case Expr.RString(s)  => s.toBooleanOption.toRight(FailureReason.InvalidArgumentValue(expr))
+          case Expr.RString(s)  => s.toBooleanOption.toRight(FailureReason.InvalidArgumentValue("Cannot be cast to Boolean", expr))
           case Expr.RInt(i)     => Right(i != 0)
           case Expr.RBoolean(b) => Right(b)
           case Expr.RLong(l)    => Right(l != 0L)
           case Expr.RDouble(d)  => Right(d != 0.0)
           case Expr.RFloat(f)   => Right(f != 0.0f)
-          case _                => Left(FailureReason.InvalidArgumentType("Convertible to Boolean", expr))
+          case _                => Left(FailureReason.InvalidArgumentType("Cannot be cast to Boolean", expr))
         }

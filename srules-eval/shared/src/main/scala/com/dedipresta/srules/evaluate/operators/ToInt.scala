@@ -23,11 +23,11 @@ object ToInt:
 
       private def toInt(op: String, expr: Expr): Either[FailureReason, Int] =
         expr match {
-          case Expr.RString(s)  => s.toIntOption.toRight(FailureReason.InvalidArgumentValue(expr))
+          case Expr.RString(s)  => s.toIntOption.toRight(FailureReason.InvalidArgumentValue("Cannot be cast to Int", expr))
           case Expr.RInt(i)     => Right(i)
           case Expr.RBoolean(b) => Right(if (b) 1 else 0)
           case Expr.RLong(l)    => Right(l.toInt)
           case Expr.RDouble(d)  => Right(d.toInt)
           case Expr.RFloat(f)   => Right(f.toInt)
-          case _                => Left(FailureReason.InvalidArgumentType("Convertible to Int", expr))
+          case _                => Left(FailureReason.InvalidArgumentType("Cannot be cast to Int", expr))
         }

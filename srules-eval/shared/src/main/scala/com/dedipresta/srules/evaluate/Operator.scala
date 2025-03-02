@@ -2,13 +2,6 @@ package com.dedipresta.srules.evaluate
 
 import com.dedipresta.srules.Expr
 
-import cats.syntax.all.*
-
-// TODO evaluated/ lazy
-// Effect
-// alias
-// provide name or operator itself ?
-
 type EvaluateFn[Ctx, E] = (ExprEvaluator[Ctx, E], String, List[Expr], RuleCtx[Ctx]) => Either[E, Expr]
 
 trait Operator[Ctx, E]:

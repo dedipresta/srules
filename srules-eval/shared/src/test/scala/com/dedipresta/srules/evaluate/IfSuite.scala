@@ -55,7 +55,7 @@ final class IfSuite extends FunSuite {
   test("parse and evaluate if-else expression and evaluate the value") {
     assertEquals(
       SRules.parse("if(true, 1/0, 0)").flatMap(evaluator.evaluate(_, Map.empty)),
-      Left(EvaluationError.DivisionByZero("/", List(Expr.RInt(1), Expr.RInt(0)))),
+      Left(EvaluationError.OperationFailure("/", List(Expr.RInt(1), Expr.RInt(0)), FailureReason.DivisionByZero(Expr.RInt(1), Expr.RInt(0)))),
     )
   }
 

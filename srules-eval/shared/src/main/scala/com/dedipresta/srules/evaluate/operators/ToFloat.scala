@@ -24,11 +24,11 @@ object ToFloat:
 
       private def toFloat(op: String, expr: Expr): Either[FailureReason, Float] =
         expr match {
-          case Expr.RString(s)  => s.toFloatOption.toRight(FailureReason.InvalidArgumentValue(expr))
+          case Expr.RString(s)  => s.toFloatOption.toRight(FailureReason.InvalidArgumentValue("Cannot be cast to Float", expr))
           case Expr.RInt(i)     => Right(i.toFloat)
           case Expr.RBoolean(b) => Right(if (b) 1f else 0f)
           case Expr.RLong(l)    => Right(l.toFloat)
           case Expr.RDouble(d)  => Right(d.toFloat)
           case Expr.RFloat(f)   => Right(f)
-          case _                => Left(FailureReason.InvalidArgumentType("Convertible to Float", expr))
+          case _                => Left(FailureReason.InvalidArgumentType("Cannot be cast to Float", expr))
         }

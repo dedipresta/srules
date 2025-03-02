@@ -1,29 +1,41 @@
 package com.dedipresta.srules.evaluate
 
 import com.dedipresta.srules.Expr
+import com.dedipresta.srules.given
 
-// TODO improve error building
-sealed trait EvaluationError
+import cats.syntax.all.*
+
+sealed trait EvaluationError:
+  def message: String
 object EvaluationError:
-  case class OperatorNotFound(op: String)                               extends EvaluationError
-  case class InvalidArgument(op: String, args: List[Expr])              extends EvaluationError       // argument value
-  sealed trait InvalidArgumentsCount                                    extends EvaluationError
-  case class AtLeast(op: String, n: Int, args: List[Expr])              extends InvalidArgumentsCount
-  case class AtMost(op: String, n: Int, args: List[Expr])               extends InvalidArgumentsCount
-  case class Exactly(op: String, n: Int, args: List[Expr])              extends InvalidArgumentsCount
-  case class ZZZZZ(op: String)                                          extends InvalidArgumentsCount // TODO FIXME
-  case class DivisionByZero(op: String, args: List[Expr])               extends EvaluationError
-  case class VariableNotFound(name: String)                             extends EvaluationError
-  case class UnsupportedVariableType(name: String)                      extends EvaluationError
-  case class OperatorRequiresNonEmptyList(op: String, args: List[Expr]) extends EvaluationError
+  case class OperatorNotFound(op: String, expr: Expr)                              extends EvaluationError:
+    def message: String = s"Operator not found: op=$op, expr=${expr.show}"
+  case class OperationFailure(op: String, args: List[Expr], reason: FailureReason) extends EvaluationError:
+    def message: String = s"Operation failure: op=$op, args=[${args.map(_.show).mkString(",")}], reason=(${reason.message})"
 
-  case class OperationFailure(op: String, args: List[Expr], reason: FailureReason) extends EvaluationError
-  trait CustomError                                                                extends EvaluationError
-
-trait FailureReason
+trait FailureReason:
+  def message: String
 object FailureReason:
-  case class Message(msg: String)                                       extends FailureReason
-  case class InvalidArgumentType(expected: String, actual: Expr)        extends FailureReason
-  case class InvalidArgumentTypes(expected: String, actual: List[Expr]) extends FailureReason
-  case class InvalidArgumentValue(actual: Expr)                         extends FailureReason
-  case class InvalidArgumentCount()
+  case class Message(message: String)                                               extends FailureReason
+  case class InvalidArgumentType(expected: String, actual: Expr)                    extends FailureReason:
+    def message: String = s"Invalid argument type: expected=$expected, actual=${actual.show}"
+  case class InvalidArgumentTypes(expected: String, actual: List[Expr])             extends FailureReason:
+    def message: String = s"Invalid argument types: expected=$expected, actual=[${actual.map(_.show).mkString(",")}]"
+  case class InvalidArgumentValue(expected: String, actual: Expr)                   extends FailureReason:
+    def message: String = s"Invalid argument value: expected=$expected, actual=${actual.show}"
+  case class InvalidArgumentsCount(min: Option[Int], max: Option[Int], actual: Int) extends FailureReason:
+    def message: String =
+      val minStr = min.fold("")(m => s"min=$m")
+      val maxStr = max.fold("")(m => s"max=$m")
+      s"Invalid arguments count: $minStr $maxStr, actual=$actual"
+  object InvalidArgumentsCount {
+    def atLeast(min: Int, actual: Int): InvalidArgumentsCount = InvalidArgumentsCount(Some(min), None, actual)
+    def atMost(max: Int, actual: Int): InvalidArgumentsCount  = InvalidArgumentsCount(None, Some(max), actual)
+    def exactly(n: Int, actual: Int): InvalidArgumentsCount   = InvalidArgumentsCount(Some(n), Some(n), actual)
+  }
+  case class InvalidArgumentsCountPattern(expected: String, actual: Int)            extends FailureReason:
+    def message: String = s"Invalid arguments count pattern: expected=$expected, actual=$actual"
+  case class DivisionByZero(left: Expr, right: Expr)                                extends FailureReason:
+    def message: String = s"Division by zero: left=${left.show}, right=${right.show}"
+  case class VariableNotFound(name: String)                                         extends FailureReason:
+    def message: String = s"Variable not found: name=$name"

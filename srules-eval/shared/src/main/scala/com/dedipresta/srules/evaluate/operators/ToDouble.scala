@@ -23,11 +23,11 @@ object ToDouble:
 
       private def toDouble(op: String, expr: Expr): Either[FailureReason, Double] =
         expr match {
-          case Expr.RString(s)  => s.toDoubleOption.toRight(FailureReason.InvalidArgumentValue(expr))
+          case Expr.RString(s)  => s.toDoubleOption.toRight(FailureReason.InvalidArgumentValue("Cannot be cast to Double", expr))
           case Expr.RInt(i)     => Right(i.toDouble)
           case Expr.RBoolean(b) => Right(if (b) 1.0 else 0.0)
           case Expr.RLong(l)    => Right(l.toDouble)
           case Expr.RDouble(d)  => Right(d)
           case Expr.RFloat(f)   => Right(f.toDouble)
-          case _                => Left(FailureReason.InvalidArgumentType("Convertible to Double", expr))
+          case _                => Left(FailureReason.InvalidArgumentType("Cannot be cast to Double", expr))
         }
