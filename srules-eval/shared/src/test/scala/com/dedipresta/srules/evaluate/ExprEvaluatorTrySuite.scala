@@ -12,7 +12,7 @@ import munit.*
 final class ExprEvaluatorTrySuite extends FunSuite {
 
   import ExprEvaluatorImpl.given
-  given UserContextReader[Try,Map[String, Expr]]               = UserContextReader.forMapExpr(notFoundToNull = true)
+  given UserContextReader[Try, Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
   val evaluator: ExprEvaluatorImpl[Try, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all[Try, Map[String, Expr]])
 
   extension (s: SRules.type) {

@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/licenses/MIT)
 [![made with love](https://img.shields.io/badge/Made_with-❤-red.svg)](https://www.dedipresta.com)
 
-Rules parsing and evaluation for scala 3 built on top of `cats`.
+Rules parsing and evaluation for `Scala 3` built on top of `cats`.
 
 SRules is a library for defining and evaluating rules in Scala 3.
 It is inspired by JsonLogic but uses simple strings to define rules instead of JSON.
@@ -18,6 +18,23 @@ Motivation:
 1. extensibility with custom operators
 1. ability to evaluate to different types (Boolean, Int, Long, Float, Double, String, List)
 1. human readable rules
+
+# Table of Contents
+1. [Sample Rules](#sample-rules)
+1. [Installation](#installation)
+1. [Usage](#usage)
+1. [Understanding Rules Parsing](#understanding-rules-parsing)
+    1. [Values of `Expr` and rewriting rules](#values-of-expr-and-rewriting-rules)
+    1. [Operators](#operators)
+    1. [Variables](#variables)
+    1. [Built-in variables](#built-in-variables)
+1. [Understanding Rules Evaluation](#understanding-rules-evaluation)
+1. [Default Operators](#default-operators)
+1. [Building a Custom Operator](#building-a-custom-operator)
+   1. [Evaluating Arguments](#evaluating-arguments)
+   1. [Syntax Helpers](#syntax-helpers)
+1. [Reading the User Context](#reading-the-user-context)
+1. [Show](#show)
 
 ## Sample Rules
 
@@ -63,7 +80,7 @@ reduce([1, 2, 3], acc() + value())
 
 ## Installation
 
-```sbt
+```plaintext
 libraryDependencies += "com.dedipresta" %%% "srules-core" % version // ADT + parser + Show
 libraryDependencies += "com.dedipresta" %%% "srules-eval" % version // default evaluator and operators
 ```

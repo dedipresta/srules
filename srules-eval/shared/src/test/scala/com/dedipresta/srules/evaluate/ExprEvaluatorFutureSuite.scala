@@ -1,17 +1,20 @@
 package com.dedipresta.srules.evaluate
 
-import cats.syntax.all.*
-import com.dedipresta.srules.evaluate.operators.*
 import com.dedipresta.srules.{*, given}
-import munit.*
+import com.dedipresta.srules.evaluate.operators.*
 
+import cats.syntax.all.*
+
+import scala.concurrent.ExecutionContext
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
+
+import munit.*
 
 final class ExprEvaluatorFutureSuite extends FunSuite {
 
   import ExprEvaluatorImpl.given
-  given UserContextReader[Future, Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+  given UserContextReader[Future, Map[String, Expr]]          = UserContextReader.forMapExpr(notFoundToNull = true)
   val evaluator: ExprEvaluatorImpl[Future, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all[Future, Map[String, Expr]])
 
   extension (s: SRules.type) {
