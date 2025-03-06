@@ -322,7 +322,7 @@ final class ParserSuite extends FunSuite {
     val add         = RFunction("+", RInt(1), mult1)
     val expectation = RFunction("-", add, mult2)
     assertEquals(
-      Parser.parser.parseAll("1 + (2*3) - 3*$var1"),
+      Parser.parser.parseAll(expr),
       Right(expectation),
     )
   }

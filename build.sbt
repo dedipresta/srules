@@ -1,3 +1,5 @@
+import org.typelevel.scalacoptions.ScalacOptions
+
 import ReleaseTransformations._
 
 ThisBuild / scalaVersion         := "3.3.4"
@@ -49,9 +51,11 @@ lazy val commonLibraryDependencies = Def.setting(
 )
 
 lazy val commonLibrarySettings = Seq(
-//  coverageMinimum       := 95, // TODO
-  coverageFailOnMinimum := true,
+  coverageFailOnMinimum      := true,
   libraryDependencies ++= commonLibraryDependencies.value,
+  Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement,
+  coverageMinimumStmtTotal   := 95,
+  coverageMinimumBranchTotal := 95,
 )
 
 lazy val srules = project
@@ -68,16 +72,17 @@ lazy val srules = project
 
 lazy val `srules-core` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("srules-core"))
   .settings(
-    name        := "srules-core",
-    description := "Rules parsing library",
+    name                       := "srules-core",
+    description                := "Rules parsing library",
     commonLibrarySettings,
     libraryDependencies ++= Seq(
       catsParse.value,
     ),
+    coverageMinimumBranchTotal := 85, // scala.js toString on floating point numbers
   )
   .jsSettings(coverageEnabled := false)
 
-lazy val `srules-eval` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Full) in file("srules-eval"))
+lazy val `srules-eval` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("srules-eval"))
   .settings(
     name        := "srules-eval",
     description := "Rules evaluation library",

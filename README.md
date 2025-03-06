@@ -6,6 +6,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/licenses/MIT)
 [![made with love](https://img.shields.io/badge/Made_with-❤-red.svg)](https://www.dedipresta.com)
 
+![Cats Friendly Badge](https://typelevel.org/cats/img/cats-badge-tiny.png)
+
 Rules parsing and evaluation for `Scala 3` built on top of `cats`.
 
 SRules is a library for defining and evaluating rules in Scala 3.
