@@ -29,8 +29,5 @@ jobs:
 
       - uses: sbt/setup-sbt@v1
 
-      - name: Run the project
-        run: sbt run
-
       - name: Run the unit tests
-        run: sbt test
+        run: sbt clean compile test
