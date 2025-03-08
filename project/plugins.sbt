@@ -1,0 +1,12 @@
+val scalaJSVersion = Option(System.getenv("SCALAJS_VERSION")).getOrElse("1.18.2")
+
+addSbtPlugin("ch.epfl.scala"      % "sbt-scalafix"             % "0.14.2")
+addSbtPlugin("org.scalameta"      % "sbt-scalafmt"             % "2.5.4")
+addSbtPlugin("org.scoverage"      % "sbt-scoverage"            % "2.3.1")
+addSbtPlugin("org.jmotor.sbt"     % "sbt-dependency-updates"   % "1.2.9")
+addSbtPlugin("org.portable-scala" % "sbt-scalajs-crossproject" % "1.3.2")
+addSbtPlugin("org.scala-js"       % "sbt-scalajs"              % scalaJSVersion)
+addSbtPlugin("org.xerial.sbt"     % "sbt-sonatype"             % "3.12.2")
+addSbtPlugin("com.github.sbt"     % "sbt-pgp"                  % "2.3.1")
+addSbtPlugin("com.github.sbt"     % "sbt-release"              % "1.4.0")
+addSbtPlugin("org.typelevel"      % "sbt-tpolecat"             % "0.5.2")

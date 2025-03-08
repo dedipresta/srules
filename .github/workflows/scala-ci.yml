@@ -1,0 +1,40 @@
+name: Continuous Integration
+
+on:
+  pull_request:
+  push:
+
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  run:
+    name: Build and Run
+    strategy:
+      matrix:
+        java-version: [8, 11, 17, 21]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout current branch (full)
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: ${{ matrix.java-version }}
+          cache: sbt
+
+      - uses: sbt/setup-sbt@v1
+
+      - name: Run the unit tests
+        run: sbt clean coverage +compile +test coverageReport coverageAggregate
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./target/scala-3.3.4/scoverage-report/scoverage.xml
+          flags: unittests
