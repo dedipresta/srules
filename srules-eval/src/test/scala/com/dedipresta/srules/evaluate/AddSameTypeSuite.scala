@@ -9,17 +9,18 @@ import munit.*
 final class AddSameTypeSuite extends FunSuite {
 
   type ErrorOr[A] = Either[EvaluationError, A]
+  type Model      = Map[String, Expr]
 
-  given UserContextReader[ErrorOr, Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+  given UserContextReader[ErrorOr, Model] = UserContextReader.forMapExpr(notFoundToNull = true)
 
-  val operators: Map[String, Operator[ErrorOr, Map[String, Expr], EvaluationError]] =
-    DefaultOperators.all[ErrorOr, Map[String, Expr]] ++
+  val operators: Map[String, Operator[ErrorOr, Model, EvaluationError]] =
+    DefaultOperators.all[ErrorOr, Model] ++
       Map(
-        "+" -> Add[ErrorOr, Map[String, Expr]](sameTypeOnly = true, noArgsToZero = false),
-        "add" -> Add[ErrorOr, Map[String, Expr]](sameTypeOnly = true, noArgsToZero = false),
+        "+"   -> Add[ErrorOr, Model](sameTypeOnly = true, noArgsToZero = false),
+        "add" -> Add[ErrorOr, Model](sameTypeOnly = true, noArgsToZero = false),
       )
 
-  val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(operators)
+  val evaluator: ExprEvaluatorImpl[ErrorOr, Model] = new ExprEvaluatorImpl(operators)
 
   test("ensure arguments are pre-evaluated") {
     assertEquals(

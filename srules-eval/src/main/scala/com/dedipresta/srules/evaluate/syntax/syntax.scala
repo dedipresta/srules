@@ -202,6 +202,7 @@ extension (args: List[Expr]) {
   def doubles: Either[FailureReason, List[Double]]   = args.values[Double]
   def strings: Either[FailureReason, List[String]]   = args.values[String]
   def booleans: Either[FailureReason, List[Boolean]] = args.values[Boolean]
+  def lists: Either[FailureReason, List[List[Expr]]] = args.values[List[Expr]]
 
   def foldExtract[T: ExprExtractor](start: T)(f: (T, T) => T): Either[FailureReason, T] =
     args.foldLeftM(start)((acc, expr) =>

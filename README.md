@@ -89,6 +89,8 @@ libraryDependencies += "com.dedipresta" %%% "srules-eval" % version // default e
 
 ## Usage
 
+In order to evaluate a rule you will need an effect type with a `MonadError` instance. In the following examples we use Either.
+
 ```scala 3
 import cats.syntax.all.*
 import com.dedipresta.srules.given // for show instance
@@ -100,11 +102,12 @@ type ErrorOr[A] = Either[EvaluationError, A]
 
 // a given to read variables from your data model, to make it easy we'll use a Map[String, Expr]
 // required by the `var` operator, you may use UserContextReader.noContext if you don't need to read variables
-given UserContextReader[ErrorOr, Map[String, Expr]] = UserContextReader.forMapExpr(notFoundToNull = true)
+type Model = Map[String, Expr]
+given UserContextReader[ErrorOr, Model] = UserContextReader.forMapExpr(notFoundToNull = true)
 // an evaluator with the operators you want to use
-val evaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
+val evaluator: ExprEvaluatorImpl[ErrorOr, Model] = new ExprEvaluatorImpl(DefaultOperators.all)
 
-val model: Map[String, Expr] = Map[String, Expr]("var1" -> SRules.parseOrThrow("-42"))
+val model: Model = Map[String, Expr]("var1" -> SRules.parseOrThrow("-42"))
 
 SRules.parse("abs($var1)").flatMap(evaluator.evaluateAll(_, model)) // res: Right(RInt(42))
 SRules.parse("abs($var1)").flatMap(evaluator.evaluateAllAs[Int](_, model)) // res: Right(42)
@@ -129,21 +132,13 @@ val rule: Either[cats.parse.Parser.Error, Expr] = SRules.parse("($a + 3) * $b")
 
 ```scala 3
 case object RNull extends Expr
-
 case class RBoolean(value: Boolean) extends Expr
-
 case class RInt(value: Int) extends Expr
-
 case class RLong(value: Long) extends Expr
-
 case class RDouble(value: Double) extends Expr
-
 case class RFloat(value: Float) extends Expr
-
 case class RString(value: String) extends Expr
-
 case class RList(value: List[Expr]) extends Expr
-
 case class RFunction(name: String, args: List[Expr]) extends Expr
 ```
 
@@ -257,58 +252,59 @@ Each operator is responsible for evaluating its arguments and returning the resu
 
 ## Default Operators
 
-| Name        | Aliases  | Nb arguments | Description                                                                              | Example                                                                 |
-|-------------|----------|--------------|------------------------------------------------------------------------------------------|-------------------------------------------------------------------------|
-| `+`         | `add`    | [1,[         | Addition                                                                                 | `7 + 3`                                                                 |
-| `-`         | `sub`    | [1,[         | Subtraction                                                                              | `7 - 3`                                                                 |
-| `*`         | `mul`    | [1,[         | Multiplication                                                                           | `7 * 3`                                                                 |
-| `/`         | `div`    | 2            | Division                                                                                 | `7 / 3`                                                                 |
-| `%`         | `mod`    | 2            | Modulo                                                                                   | `7 % 3`                                                                 |
-| `^`         | `pow`    | 2            | Power                                                                                    | `7 ^ 3`                                                                 |
-| `==`        | `eq`     | [0,[         | Equality                                                                                 | `$age == 18`                                                            |
-| `!=`        | `ne`     | [0,[         | Inequality                                                                               | `$age != 18`                                                            |
-| `<`         | `lt`     | [0,[         | Less than                                                                                | `$age < 18`                                                             |
-| `<=`        | `le`     | [0,[         | Less than or equal                                                                       | `$age <= 18`                                                            |
-| `>`         | `gt`     | [0,[         | Greater than                                                                             | `$age > 18`                                                             |
-| `>=`        | `ge`     | [0,[         | Greater than or equal                                                                    | `$age >= 18`                                                            |
-| `&&`        | `and`    | [0,[         | Logical and                                                                              | `$age > 18 && $country == "FR"`                                         |
-| `\|\|`      | `or`     | [0,[         | Logical or                                                                               | `$age > 18 \|\| $country == "FR"`                                       |
-| `!`         | `not`    | 1            | Logical not                                                                              | `!($age > 18)`                                                          |
-| `abs`       |          | 1            | Absolute value                                                                           | `abs(-7.5d)`                                                            |
-| `acc`       |          | 0            | Access to the accumulator in a higher order function                                     | `reduce([1,2,3], acc()+value())`                                        |
-| `atIndex`   |          | 2,3          | Element of a list or string by index, null or default value expr if out of bounds        | `atIndex([1,2,3], 2)`, `atIndex([1,2,3], 4, -1)`, `atIndex("hello", 2)` |
-| `contains`  |          | 2            | Check if a list or a string contains a value                                             | `contains([1,2,3], 2)`, `contains("hello", "ll")`                       |
-| `exists`    |          | 2            | Check if at least one element of a list satisfies a condition                            | `exists($list, value() > 0)`                                            |
-| `if`        |          | 3+2n         | If-elseif-else (returns evaluated result, see `lazyIf`)                                  | `if($x>0, $value1, $y<=42, $value2, $default)`                          |
-| `index`     |          | 0            | Access to the current index in a higher order function                                   | `filter($list, index()%2 == 0)`                                         |
-| `indexOf`   |          | 2            | Index of an element in a list or string, -1 if not found                                 | `indexOf([1,2,3], 2)`, `indexOf("hello", "ll")`                         |
-| `isNull`    |          | 1            | Check if a value is null                                                                 | `isNull($value)`                                                        |
-| `ceil`      |          | 1            | Ceiling                                                                                  | `ceil(7.5d)`                                                            |
-| `eval`      |          | 1            | Evaluate (to combine with lazy operator, or list of expressions)                         | `eval(($a + 3) * $b)`                                                   |
-| `fail`      |          | [0,1]        | Fail with a message                                                                      | `fail("error message")`                                                 |
-| `filter`    |          | 2            | Filter                                                                                   | `filter($list, index()%2 == 0)`                                         |
-| `find`      |          | 2            | Find an element in a list                                                                | `find($list, value() % 5 == 0)`                                         |
-| `floor`     |          | 1            | Floor                                                                                    | `floor(7.5d)`                                                           |
-| `forAll`    |          | 2            | Check if all elements of a list satisfy a condition                                      | `forAll($list, value() > 0)`                                            |
-| `isEmpty`   |          | 1            | Check if a list or a string is empty                                                     | `isEmpty([1,2,3])`, `isEmpty("hello")`                                  |
-| `lazyIf`    |          | 3+2n         | Similar to `if` but does not evaluate returned value                                     | `lazyIf($x>0, $value1, $y<=42, $value2, $default)`                      |
-| `map`       |          | 2            | Map                                                                                      | `map([1,2,3], value()*2)`                                               |
-| `max`       |          | [1,[         | Maximum                                                                                  | `max(4,5,9,1,8,6)`                                                      |
-| `min`       |          | [1,[         | Minimum                                                                                  | `min(4,5,9,1,8,6)`                                                      |
-| `named`     |          | 1,3          | Named value ; named(name) to read it ; named(name, value, exprWithNamed) to evaluate ;   | `named("i", $var1, if(isNull(named("i")), -1, named("i")*2))`           |
-| `nonEmpty`  |          | 1            | Check if a list or a string is not empty                                                 | `nonEmpty([1,2,3])`, `nonEmpty("hello")`                                |
-| `notNull`   |          | 1            | Check if a value is not null                                                             | `notNull($value)`                                                       |
-| `reduce`    |          | 2            | Reduce                                                                                   | `reduce([1,2,3], acc()+value())`                                        |
-| `round`     |          | 1            | Round                                                                                    | `round(7.5d)`                                                           |
-| `size`      |          | 1            | Get the size of a list or a string                                                       | `size([1,2,3])`, `size("hello")`                                        |
-| `toInt`     | `int`    | 1            | Convert to Int                                                                           | `toInt(7.5d)`                                                           |
-| `toLong`    | `long`   | 1            | Convert to Long                                                                          | `toLong(7.5d)`                                                          |
-| `toFloat`   | `float`  | 1            | Convert to Float                                                                         | `toFloat(7.5d)`                                                         |
-| `toDouble`  | `double` | 1            | Convert to Double                                                                        | `toDouble(7.5d)`                                                        |
-| `toString`  | `string` | 1            | Convert to String                                                                        | `toString(7.5d)`                                                        |
-| `toBoolean` | `bool`   | 1            | Convert to Boolean                                                                       | `toBoolean(7.5d)`                                                       |
-| `var`       |          | [1,2]        | Access to context variables `You should implement UserContextReader[Ctx] for your model` | `$age > 18`, `var("name", 42)`                                          |
-| `value`     |          | 0            | Access to the current value in a higher order function                                   | `map([1,2,3], value()*2)`                                               |
+| Name        | Aliases  | Nb arguments | Description                                                                              | Example                                                                  |
+|-------------|----------|--------------|------------------------------------------------------------------------------------------|--------------------------------------------------------------------------|
+| `+`         | `add`    | [0,[         | Addition                                                                                 | `7 + 3`                                                                  |
+| `-`         | `sub`    | [1,[         | Subtraction                                                                              | `7 - 3`                                                                  |
+| `*`         | `mul`    | [1,[         | Multiplication                                                                           | `7 * 3`                                                                  |
+| `/`         | `div`    | 2            | Division                                                                                 | `7 / 3`                                                                  |
+| `%`         | `mod`    | 2            | Modulo                                                                                   | `7 % 3`                                                                  |
+| `^`         | `pow`    | 2            | Power                                                                                    | `7 ^ 3`                                                                  |
+| `==`        | `eq`     | [0,[         | Equality                                                                                 | `$age == 18`                                                             |
+| `!=`        | `ne`     | [0,[         | Inequality                                                                               | `$age != 18`                                                             |
+| `<`         | `lt`     | [0,[         | Less than                                                                                | `$age < 18`                                                              |
+| `<=`        | `le`     | [0,[         | Less than or equal                                                                       | `$age <= 18`                                                             |
+| `>`         | `gt`     | [0,[         | Greater than                                                                             | `$age > 18`                                                              |
+| `>=`        | `ge`     | [0,[         | Greater than or equal                                                                    | `$age >= 18`                                                             |
+| `&&`        | `and`    | [0,[         | Logical and                                                                              | `$age > 18 && $country == "FR"`                                          |
+| `\|\|`      | `or`     | [0,[         | Logical or                                                                               | `$age > 18 \|\| $country == "FR"`                                        |
+| `!`         | `not`    | 1            | Logical not                                                                              | `!($age > 18)`                                                           |
+| `abs`       |          | 1            | Absolute value                                                                           | `abs(-7.5d)`                                                             |
+| `acc`       |          | 0            | Access to the accumulator in a higher order function                                     | `reduce([1,2,3], acc()+value())`                                         |
+| `atIndex`   |          | 2,3          | Element of a list or string by index, null or default value expr if out of bounds        | `atIndex([1,2,3], 2)`, `atIndex([1,2,3], 4, -1)`, `atIndex("hello", 2)`  |
+| `concat`    |          | [1,[         | Concatenation                                                                            | `concat("hello", " world")`, `concat([1,2], [3,4])`                      |
+| `contains`  |          | 2            | Check if a list or a string contains a value                                             | `contains([1,2,3], 2)`, `contains("hello", "ll")`                        |
+| `exists`    |          | 2            | Check if at least one element of a list satisfies a condition                            | `exists($list, value() > 0)`                                             |
+| `if`        |          | 3+2n         | If-elseif-else (returns evaluated result, see `lazyIf`)                                  | `if($x>0, $value1, $y<=42, $value2, $default)`                           |
+| `index`     |          | 0            | Access to the current index in a higher order function                                   | `filter($list, index()%2 == 0)`                                          |
+| `indexOf`   |          | 2            | Index of an element in a list or string, -1 if not found                                 | `indexOf([1,2,3], 2)`, `indexOf("hello", "ll")`                          |
+| `isNull`    |          | 1            | Check if a value is null                                                                 | `isNull($value)`                                                         |
+| `ceil`      |          | 1            | Ceiling                                                                                  | `ceil(7.5d)`                                                             |
+| `eval`      |          | 1            | Evaluate (to combine with lazy operator, or list of expressions)                         | `eval(($a + 3) * $b)`                                                    |
+| `fail`      |          | [0,1]        | Fail with a message                                                                      | `fail("error message")`                                                  |
+| `filter`    |          | 2            | Filter                                                                                   | `filter($list, index()%2 == 0)`                                          |
+| `find`      |          | 2            | Find an element in a list                                                                | `find($list, value() % 5 == 0)`                                          |
+| `floor`     |          | 1            | Floor                                                                                    | `floor(7.5d)`                                                            |
+| `forAll`    |          | 2            | Check if all elements of a list satisfy a condition                                      | `forAll($list, value() > 0)`                                             |
+| `isEmpty`   |          | 1            | Check if a list or a string is empty                                                     | `isEmpty([1,2,3])`, `isEmpty("hello")`                                   |
+| `lazyIf`    |          | 3+2n         | Similar to `if` but does not evaluate returned value                                     | `lazyIf($x>0, $value1, $y<=42, $value2, $default)`                       |
+| `map`       |          | 2            | Map                                                                                      | `map([1,2,3], value()*2)`                                                |
+| `max`       |          | [1,[         | Maximum                                                                                  | `max(4,5,9,1,8,6)`                                                       |
+| `min`       |          | [1,[         | Minimum                                                                                  | `min(4,5,9,1,8,6)`                                                       |
+| `named`     |          | 1,3          | Named value ; named(name) to read it ; named(name, value, exprWithNamed) to evaluate ;   | `named("i", $var1, if(isNull(named("i")), -1, named("i")*2))`            |
+| `nonEmpty`  |          | 1            | Check if a list or a string is not empty                                                 | `nonEmpty([1,2,3])`, `nonEmpty("hello")`                                 |
+| `notNull`   |          | 1            | Check if a value is not null                                                             | `notNull($value)`                                                        |
+| `reduce`    |          | 2            | Reduce                                                                                   | `reduce([1,2,3], acc()+value())`                                         |
+| `round`     |          | 1            | Round                                                                                    | `round(7.5d)`                                                            |
+| `size`      |          | 1            | Get the size of a list or a string                                                       | `size([1,2,3])`, `size("hello")`                                         |
+| `toInt`     | `int`    | 1            | Convert to Int                                                                           | `toInt(7.5d)`                                                            |
+| `toLong`    | `long`   | 1            | Convert to Long                                                                          | `toLong(7.5d)`                                                           |
+| `toFloat`   | `float`  | 1            | Convert to Float                                                                         | `toFloat(7.5d)`                                                          |
+| `toDouble`  | `double` | 1            | Convert to Double                                                                        | `toDouble(7.5d)`                                                         |
+| `toString`  | `string` | 1            | Convert to String                                                                        | `toString(7.5d)`                                                         |
+| `toBoolean` | `bool`   | 1            | Convert to Boolean                                                                       | `toBoolean(7.5d)`                                                        |
+| `var`       |          | [1,2]        | Access to context variables `You should implement UserContextReader[Ctx] for your model` | `$age > 18`, `var("name", 42)`                                           |
+| `value`     |          | 0            | Access to the current value in a higher order function                                   | `map([1,2,3], value()*2)`                                                |
 
 ## Building a Custom Operator
 

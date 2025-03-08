@@ -54,6 +54,7 @@ object DefaultOperators:
       "and"       -> and,
       "atIndex"   -> AtIndex[F, Ctx](),
       "ceil"      -> Ceil[F, Ctx](),
+      "concat"    -> Concat[F, Ctx](),
       "contains"  -> Contains[F, Ctx](),
       "div"       -> div,
       "eval"      -> Eval[F, Ctx](),
