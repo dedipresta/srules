@@ -30,7 +30,7 @@ jobs:
       - uses: sbt/setup-sbt@v1
 
       - name: Run the unit tests
-        run: sbt clean coverage +compile +test coveregeReport coverageAggregate
+        run: sbt clean coverage +compile +test coverageReport coverageAggregate
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v3
