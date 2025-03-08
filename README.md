@@ -4,6 +4,7 @@
 [![Scala.js](https://www.scala-js.org/assets/badges/scalajs-1.18.0.svg)](https://www.scala-js.org)
 ![version](https://img.shields.io/badge/semver-1.0.0-success.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/licenses/MIT)
+[![Codecov](https://img.shields.io/codecov/c/github/dedipresta/srules)](https://codecov.io/gh/dedipresta/srules)
 [![made with love](https://img.shields.io/badge/Made_with-❤-red.svg)](https://www.dedipresta.com)
 
 ![Cats Friendly Badge](https://typelevel.org/cats/img/cats-badge-tiny.png)
