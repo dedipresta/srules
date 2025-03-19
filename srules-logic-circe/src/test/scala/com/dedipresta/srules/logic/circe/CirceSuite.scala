@@ -238,11 +238,11 @@ final class CirceSuite extends FunSuite {
       )
       assertEquals(
         parse("other").flatMap(_.as[LogicalCombinator]).swap.toString,
-        "value 'other' is not a supported combinator, allowed values are [allOf, oneOf, noneOf]"
+        "value 'other' is not a supported combinator, allowed values are [allOf, oneOf, noneOf]",
       )
       assertEquals(
         LogicalCombinator.fromString("other"),
-        Left("value 'other' is not a supported combinator, allowed values are [allOf, oneOf, noneOf]")
+        Left("value 'other' is not a supported combinator, allowed values are [allOf, oneOf, noneOf]"),
       )
     }
 

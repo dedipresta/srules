@@ -1,11 +1,13 @@
 package com.dedipresta.srules.logic
 
-import cats.data.NonEmptyList
 import com.dedipresta.srules.*
 import com.dedipresta.srules.evaluate.*
 import com.dedipresta.srules.evaluate.operators.*
 import com.dedipresta.srules.evaluate.syntax.*
 import com.dedipresta.srules.logic.LogicalRule.*
+
+import cats.data.NonEmptyList
+
 import munit.*
 
 final class LogicalRuleSuite extends FunSuite {

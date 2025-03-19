@@ -5,6 +5,7 @@
 ![version](https://img.shields.io/badge/semver-1.0.0-success.svg)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blueviolet.svg)](https://opensource.org/licenses/MIT)
 [![Codecov](https://img.shields.io/codecov/c/github/dedipresta/srules)](https://codecov.io/gh/dedipresta/srules)
+![CI](https://github.com/dedipresta/srules/actions/workflows/scala-ci.yml/badge.svg?branch=main)
 [![made with love](https://img.shields.io/badge/Made_with-❤-red.svg)](https://www.dedipresta.com)
 
 ![Cats Friendly Badge](https://typelevel.org/cats/img/cats-badge-tiny.png)
