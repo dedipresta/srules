@@ -24,6 +24,7 @@ Motivation:
 
 # Table of Contents
 1. [Sample Rules](#sample-rules)
+1. [Sample rules with SRules Logic](#sample-rules-with-srules-logic)
 1. [Installation](#installation)
 1. [Usage](#usage)
 1. [Understanding Rules Parsing](#understanding-rules-parsing)
@@ -37,9 +38,18 @@ Motivation:
    1. [Evaluating Arguments](#evaluating-arguments)
    1. [Syntax Helpers](#syntax-helpers)
 1. [Reading the User Context](#reading-the-user-context)
+1. [SRules Logic](#srules-logic)
+   1. [Simple rules](#simple-rules)
+   1. [Combined rules](#combined-rules)
+   1. [Logical rule parsing](#logical-rule-parsing)
+   1. [Logical rule evaluation](#logical-rule-evaluation)
+   1. [Logical rule evaluation report](#logical-rule-evaluation-report)
 1. [Show](#show)
 
 ## Sample Rules
+
+Aim is to have string based rules that can be parsed and evaluated later with a context.
+The result of the evaluation can take different types (numeric, boolean, string, list).
 
 ```plaintext
 // basic arithmetic
@@ -81,11 +91,56 @@ filter($list, index() % 2 == 0)
 reduce([1, 2, 3], acc() + value())
 ```
 
+## Sample rules with SRules Logic
+
+Aim is to have JSON based rules with associated names.
+Built upon previous rules, these rules will always be evaluated to a boolean and can be composed with combinators (`allOf`, `oneOf`, `noneOf`).
+
+```json
+{
+   "name": "Free entrance check",
+   "allOf": [
+      {
+         "name": "May be allowed check",
+         "oneOf": [
+            {
+               "name": "Is friend",
+               "rule": "contains($friends, $userId)"
+            },
+            {
+               "name": "Has member's card",
+               "rule": "hasMemberCard($userId)"
+            },
+            {
+               "name": "Default entry requirements check",
+               "rule": "$hasTicket && sayed(\"hello\")"
+            }
+         ]
+      },
+      {
+         "name": "Excluded entrance check",
+         "noneOf": [
+            {
+               "name": "Blacklist check",
+               "rule": "contains($blacklist, $userId)"
+            }
+         ]
+      }
+   ]
+}
+```
+
 ## Installation
 
 ```plaintext
-libraryDependencies += "com.dedipresta" %%% "srules-core" % version // ADT + parser + Show
-libraryDependencies += "com.dedipresta" %%% "srules-eval" % version // default evaluator and operators
+// ADT + parser + Show
+libraryDependencies += "com.dedipresta" %%% "srules-core" % version
+// default evaluator and operators
+libraryDependencies += "com.dedipresta" %%% "srules-eval" % version
+// named rules and logical combinations
+libraryDependencies += "com.dedipresta" %%% "srules-logic" % version
+// read and write named rules to JSON
+libraryDependencies += "com.dedipresta" %%% "srules-logic-circe" % version
 ```
 
 ## Usage
@@ -478,6 +533,107 @@ numeric types from `Any` is not reliable.
 For example 42.0f will be seen as an Int and there is no way to distinguish between Float and Double, ...
 So you'll have to wrap the values in a custom type (here we use `Expr`) or provide some type information in the data or
 in the var name, ...
+
+## SRules Logic
+
+`srules-logic` and its associated artifact `srules-logic-circe` can be used to read or write json strings/ files containing named rules that evaluate to boolean values.
+
+There are 2 kinds of rules:
+1. simple rules: that associate a name to a rule
+2. combined rules: that associate a name with a combinator and a non empty list of rules
+
+
+### Simple rules
+
+```json
+{
+   "name": "My simple name",
+   "rule": "$myVar > 0"
+}
+```
+
+### Combined rules
+
+Allowed combinators are `allOf`, `oneOf`, `noneOf`.
+
+```json
+{
+  "name": "My combined rules",
+  "allOf": [
+    {
+      "name": "First rule",
+      "rule": "$myVar > 0"
+    },
+    {
+      "name": "Other combined rules",
+      "oneOf": [
+        {
+          "name": "Is over 9000",
+          "rule": "$myVar > 9000"
+        },
+        {
+          "name": "Is 42",
+          "rule": "$myVar == 42"
+        }
+      ]
+    }
+  ]
+}
+```
+
+### Logical rule parsing
+
+```scala 3
+import com.dedipresta.srules.*
+import com.dedipresta.srules.logic.LogicalRule
+import com.dedipresta.srules.logic.LogicalRule.*
+import com.dedipresta.srules.logic.circe.given // encoders and decoders
+
+import io.circe.*
+import io.circe.parser.*
+import io.circe.syntax.*
+
+val s =
+   """{
+     |  "name": "Some name",
+     |  "rule": "$a > 0"
+     |}
+     |""".stripMargin
+
+parse(s).flatMap(_.as[LogicalRule]) == Right(SimpleRule("Some name", SRules.parseOrThrow("$a > 0"))),
+// true
+```
+
+### Logical rule evaluation
+
+Evaluating a logical rule is similar to what you may do for other rules.
+
+```scala 3
+type ErrorOr[A] = Either[EvaluationError, A]
+given UserContextReader[ErrorOr, Map[String, Expr]]              = UserContextReader.forMapExpr(notFoundToNull = true)
+val exprEvaluator: ExprEvaluatorImpl[ErrorOr, Map[String, Expr]] = new ExprEvaluatorImpl(DefaultOperators.all)
+
+// specific to logical rules
+val evaluator = new LogicalEvaluatorImpl[ErrorOr, Map[String, Expr]](exprEvaluator)
+
+val rule = SimpleRule("some rule name", true.toExpr)
+evaluator.evaluate(rule, Map.empty) // Right(true)
+```
+
+### Logical rule evaluation report
+
+You may also use `evaluator.evaluateWithReport` to get a `Report` to get the details of the evaluation instead of the final result.
+
+```scala 3
+final case class Report(
+    name: String,
+    satisfied: Boolean,
+    combinator: Option[LogicalCombinator],
+    details: List[Report],
+)
+```
+
+`Report` has `circe` encoder and decoder.
 
 ## Show
 

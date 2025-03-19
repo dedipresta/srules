@@ -42,6 +42,7 @@ ThisBuild / releaseProcess    := Seq[ReleaseStep](
 
 val catsCore  = Def.setting("org.typelevel" %%% "cats-core" % "2.13.0")
 val catsParse = Def.setting("org.typelevel" %%% "cats-parse" % "1.1.0")
+val circe     = Def.setting("io.circe" %%% "circe-parser" % "0.14.11")
 val munit     = Def.setting("org.scalameta" %%% "munit" % "1.1.0")
 
 lazy val commonLibraryDependencies = Def.setting(
@@ -54,20 +55,30 @@ lazy val commonLibrarySettings = Seq(
   coverageFailOnMinimum      := true,
   libraryDependencies ++= commonLibraryDependencies.value,
   Test / tpolecatExcludeOptions += ScalacOptions.warnNonUnitStatement,
-  coverageMinimumStmtTotal   := 95,
-  coverageMinimumBranchTotal := 95,
+  coverageMinimumStmtTotal   := 85,
+  coverageMinimumBranchTotal := 85,
+)
+
+lazy val jsSettings = Seq(
+  coverageEnabled := false,
 )
 
 lazy val srules = project
   .in(file("."))
   .settings(
-    publish / skip := true,
+    publish / skip             := true,
+    coverageMinimumStmtTotal   := 95,
+    coverageMinimumBranchTotal := 95,
   )
   .aggregate(
     `srules-core`.jvm,
     `srules-core`.js,
     `srules-eval`.jvm,
     `srules-eval`.js,
+    `srules-logic`.jvm,
+    `srules-logic`.js,
+    `srules-logic-circe`.jvm,
+    `srules-logic-circe`.js,
   )
 
 lazy val `srules-core` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("srules-core"))
@@ -80,7 +91,7 @@ lazy val `srules-core` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossT
     ),
     coverageMinimumBranchTotal := 85, // scala.js toString on floating point numbers
   )
-  .jsSettings(coverageEnabled := false)
+  .jsSettings(jsSettings)
 
 lazy val `srules-eval` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("srules-eval"))
   .settings(
@@ -91,4 +102,25 @@ lazy val `srules-eval` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossT
     ),
   )
   .dependsOn(`srules-core`)
-  .jsSettings(coverageEnabled := false)
+  .jsSettings(jsSettings)
+
+lazy val `srules-logic` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("srules-logic"))
+  .settings(
+    name        := "srules-logic",
+    description := "Rules logic library",
+    commonLibrarySettings,
+    libraryDependencies ++= Seq(
+    ),
+  )
+  .dependsOn(`srules-core`, `srules-eval`)
+  .jsSettings(jsSettings)
+
+lazy val `srules-logic-circe` = (crossProject(JSPlatform, JVMPlatform).crossType(CrossType.Pure) in file("srules-logic-circe"))
+  .settings(
+    name        := "srules-logic-circe",
+    description := "Rules logic JSON support with Circe",
+    commonLibrarySettings,
+    libraryDependencies ++= Seq(circe.value),
+  )
+  .dependsOn(`srules-core`, `srules-logic`)
+  .jsSettings(jsSettings)
